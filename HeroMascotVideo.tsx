@@ -1,4 +1,6 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
+import { TATU_POSTER_DATA } from '../data/tatuPosterData';
+import { TATU_GIF_DATA } from '../data/tatuGifData';
 import { TATU_VIDEO_DATA } from '../data/tatuVideoData';
 
 interface HeroMascotVideoProps {
@@ -7,6 +9,7 @@ interface HeroMascotVideoProps {
 
 export const HeroMascotVideo: React.FC<HeroMascotVideoProps> = ({ onScrollToJobs }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoFailed, setVideoFailed] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -16,9 +19,9 @@ export const HeroMascotVideo: React.FC<HeroMascotVideoProps> = ({ onScrollToJobs
       const playPromise = video.play();
       if (playPromise !== undefined) {
         playPromise.catch(() => {
-          // Autoplay fallback: tenta tocar quando o usuário interagir
+          // Autoplay fallback: toca no primeiro clique/touch
           const handleFirstClick = () => {
-            video.play().catch(() => {});
+            video.play().catch(() => setVideoFailed(true));
             window.removeEventListener('click', handleFirstClick);
             window.removeEventListener('touchstart', handleFirstClick);
           };
@@ -39,29 +42,45 @@ export const HeroMascotVideo: React.FC<HeroMascotVideoProps> = ({ onScrollToJobs
         {/* Efeito Glow Dourado em volta */}
         <div className="absolute inset-0 bg-yellow-400/30 blur-2xl rounded-2xl pointer-events-none group-hover:bg-yellow-400/50 transition-colors" />
 
-        {/* Tag de Vídeo com suporte a Data URI embutido (à prova de falhas em qualquer CDN/Vercel) e fallback para arquivo direto */}
+        {/* Card do Mascote com Imagem/GIF/Vídeo 100% à prova de falhas em qualquer CDN/Vercel */}
         <div className="w-48 sm:w-56 md:w-64 aspect-square rounded-2xl overflow-hidden shadow-2xl border-2 sm:border-3 border-yellow-400/90 bg-[#1e1338] relative flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-          <video
-            ref={videoRef}
-            autoPlay
-            loop
-            muted
-            playsInline
-            controls={false}
-            preload="auto"
-            poster="/tatu-poster.jpg"
-            className="w-full h-full object-cover block"
-          >
-            <source src={TATU_VIDEO_DATA} type="video/mp4" />
-            <source src="/TATU.mp4" type="video/mp4" />
-            <source src="/tatu-animado.mp4" type="video/mp4" />
-            {/* Fallback de imagem caso o navegador desative reprodução de vídeo */}
+          {!videoFailed ? (
+            <video
+              ref={videoRef}
+              autoPlay
+              loop
+              muted
+              playsInline
+              controls={false}
+              preload="auto"
+              poster={TATU_POSTER_DATA}
+              onError={() => setVideoFailed(true)}
+              className="w-full h-full object-cover block"
+            >
+              <source src={TATU_VIDEO_DATA} type="video/mp4" />
+              <source src="/tatu-animado.mp4" type="video/mp4" />
+              <source src="/TATU.mp4" type="video/mp4" />
+              {/* Fallback de Imagem com Data URI embutido se a tag video falhar */}
+              <img 
+                src={TATU_GIF_DATA || TATU_POSTER_DATA} 
+                alt="Mascote Tatu Vai Que Dá Certo" 
+                className="w-full h-full object-cover block" 
+              />
+            </video>
+          ) : (
             <img 
-              src="/tatu-poster.jpg" 
+              src={TATU_GIF_DATA || TATU_POSTER_DATA} 
               alt="Mascote Tatu Vai Que Dá Certo" 
-              className="w-full h-full object-cover" 
+              className="w-full h-full object-cover block" 
             />
-          </video>
+          )}
+
+          {/* Badge flutuante interativa */}
+          <div className="absolute bottom-2 inset-x-2 py-1 px-2 bg-slate-900/85 backdrop-blur-sm border border-yellow-400/60 rounded-xl text-center shadow-md">
+            <span className="text-[10px] sm:text-xs font-black text-yellow-300 uppercase tracking-wider flex items-center justify-center gap-1">
+              ✨ Mascote Oficial • Ver Vagas
+            </span>
+          </div>
         </div>
       </div>
     </div>
