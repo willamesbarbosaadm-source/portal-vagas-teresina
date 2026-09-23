@@ -7,12 +7,27 @@ import { getFirestore, collection, doc, setDoc, getDocs } from 'firebase/firesto
 
 function getDb() {
   try {
+    let firebaseConfigData: any = null;
     const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
-    if (!fs.existsSync(configPath)) {
-      console.warn('firebase-applet-config.json não encontrado');
+    if (fs.existsSync(configPath)) {
+      firebaseConfigData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    } else if (process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_CONFIG) {
+      firebaseConfigData = process.env.FIREBASE_CONFIG 
+        ? JSON.parse(process.env.FIREBASE_CONFIG)
+        : {
+            apiKey: process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,
+            authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || process.env.FIREBASE_AUTH_DOMAIN,
+            projectId: process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID,
+            storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || process.env.FIREBASE_STORAGE_BUCKET,
+            messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || process.env.FIREBASE_MESSAGING_SENDER_ID,
+            appId: process.env.VITE_FIREBASE_APP_ID || process.env.FIREBASE_APP_ID
+          };
+    }
+
+    if (!firebaseConfigData) {
+      console.warn('Configuração do Firebase não encontrada para Themos');
       return null;
     }
-    const firebaseConfigData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfigData);
     return getFirestore(app);
   } catch (err) {
