@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { TATU_POSTER_DATA } from '../data/tatuPosterData';
-import { TATU_GIF_DATA } from '../data/tatuGifData';
-import { TATU_VIDEO_DATA } from '../data/tatuVideoData';
+import armadilloPoster from '../assets/images/armadillo_calling_1790169038271.jpg';
+import armadilloAlt from '../assets/images/armadillo_transparent_clean_1790170398950.jpg';
 
 interface HeroMascotVideoProps {
   onScrollToJobs: () => void;
@@ -9,6 +8,7 @@ interface HeroMascotVideoProps {
 
 export const HeroMascotVideo: React.FC<HeroMascotVideoProps> = ({ onScrollToJobs }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoLoaded, setVideoLoaded] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
 
   useEffect(() => {
@@ -16,19 +16,20 @@ export const HeroMascotVideo: React.FC<HeroMascotVideoProps> = ({ onScrollToJobs
     if (video) {
       video.defaultMuted = true;
       video.muted = true;
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          // Autoplay fallback: toca no primeiro clique/touch
-          const handleFirstClick = () => {
-            video.play().catch(() => setVideoFailed(true));
-            window.removeEventListener('click', handleFirstClick);
-            window.removeEventListener('touchstart', handleFirstClick);
+      video.play()
+        .then(() => setVideoLoaded(true))
+        .catch(() => {
+          // Autoplay fallback: tenta no primeiro toque/clique da tela
+          const handleFirstInteraction = () => {
+            if (video) {
+              video.play().then(() => setVideoLoaded(true)).catch(() => setVideoFailed(true));
+            }
+            window.removeEventListener('click', handleFirstInteraction);
+            window.removeEventListener('touchstart', handleFirstInteraction);
           };
-          window.addEventListener('click', handleFirstClick);
-          window.addEventListener('touchstart', handleFirstClick);
+          window.addEventListener('click', handleFirstInteraction, { once: true });
+          window.addEventListener('touchstart', handleFirstInteraction, { once: true });
         });
-      }
     }
   }, []);
 
@@ -39,11 +40,11 @@ export const HeroMascotVideo: React.FC<HeroMascotVideoProps> = ({ onScrollToJobs
       title="Clique para ver as vagas de hoje!"
     >
       <div className="relative shrink-0">
-        {/* Efeito Glow Dourado em volta */}
-        <div className="absolute inset-0 bg-yellow-400/30 blur-2xl rounded-2xl pointer-events-none group-hover:bg-yellow-400/50 transition-colors" />
+        {/* Efeito Glow Dourado e Roxo em volta */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-yellow-400/40 via-purple-600/30 to-amber-300/40 blur-2xl rounded-3xl pointer-events-none group-hover:scale-110 transition-transform duration-500" />
 
-        {/* Card do Mascote com Imagem/GIF/Vídeo 100% à prova de falhas em qualquer CDN/Vercel */}
-        <div className="w-48 sm:w-56 md:w-64 aspect-square rounded-2xl overflow-hidden shadow-2xl border-2 sm:border-3 border-yellow-400/90 bg-[#1e1338] relative flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+        {/* Card do Mascote Oficial - Altíssima Qualidade e Confiabilidade */}
+        <div className="w-48 sm:w-56 md:w-64 aspect-square rounded-3xl overflow-hidden shadow-[0_12px_36px_rgba(0,0,0,0.4)] border-3 border-yellow-400 bg-gradient-to-b from-[#2b124c] to-[#120726] relative flex items-center justify-center group-hover:scale-105 transition-all duration-300">
           {!videoFailed ? (
             <video
               ref={videoRef}
@@ -53,32 +54,35 @@ export const HeroMascotVideo: React.FC<HeroMascotVideoProps> = ({ onScrollToJobs
               playsInline
               controls={false}
               preload="auto"
-              poster={TATU_POSTER_DATA}
+              poster={armadilloPoster}
+              onPlaying={() => setVideoLoaded(true)}
               onError={() => setVideoFailed(true)}
               className="w-full h-full object-cover block"
             >
-              <source src={TATU_VIDEO_DATA} type="video/mp4" />
               <source src="/tatu-animado.mp4" type="video/mp4" />
               <source src="/TATU.mp4" type="video/mp4" />
-              {/* Fallback de Imagem com Data URI embutido se a tag video falhar */}
+              <source src="/tatu.mp4" type="video/mp4" />
+              {/* Fallback de Imagem se a tag video não carregar */}
               <img 
-                src={TATU_GIF_DATA || TATU_POSTER_DATA} 
-                alt="Mascote Tatu Vai Que Dá Certo" 
+                src={armadilloPoster || armadilloAlt} 
+                alt="Mascote Tatu do Vai Que Dá Certo" 
                 className="w-full h-full object-cover block" 
               />
             </video>
           ) : (
             <img 
-              src={TATU_GIF_DATA || TATU_POSTER_DATA} 
-              alt="Mascote Tatu Vai Que Dá Certo" 
+              src={armadilloPoster || armadilloAlt} 
+              alt="Mascote Tatu do Vai Que Dá Certo" 
               className="w-full h-full object-cover block" 
             />
           )}
 
           {/* Badge flutuante interativa */}
-          <div className="absolute bottom-2 inset-x-2 py-1 px-2 bg-slate-900/85 backdrop-blur-sm border border-yellow-400/60 rounded-xl text-center shadow-md">
-            <span className="text-[10px] sm:text-xs font-black text-yellow-300 uppercase tracking-wider flex items-center justify-center gap-1">
-              ✨ Mascote Oficial • Ver Vagas
+          <div className="absolute bottom-2 inset-x-2 py-1.5 px-2.5 bg-slate-950/90 backdrop-blur-md border border-yellow-400/80 rounded-2xl text-center shadow-lg">
+            <span className="text-[10px] sm:text-xs font-black text-yellow-300 uppercase tracking-wider flex items-center justify-center gap-1.5">
+              <span>🐾 Mascote Oficial</span>
+              <span className="text-white">•</span>
+              <span className="text-white">Ver Vagas</span>
             </span>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import armadilloPoster from '../assets/images/armadillo_calling_1790169038271.jpg';
 
 interface FloatingMascotProps {
   onClick?: () => void;
@@ -30,14 +31,23 @@ export const FloatingMascot: React.FC<FloatingMascotProps> = ({ onClick }) => {
       {/* Tag de vídeo MP4 contínuo e ultra fluido a 60fps */}
       <video
         ref={videoRef}
-        src="/TATU.mp4"
         autoPlay
         loop
         muted
         playsInline
         preload="auto"
-        className="w-40 h-auto rounded-xl shadow-lg border-2 border-yellow-400/80 bg-[#1e1338] relative block object-cover"
-      />
+        poster={armadilloPoster}
+        className="w-36 sm:w-40 h-auto rounded-2xl shadow-2xl border-2 border-yellow-400/90 bg-[#1e1338] relative block object-cover"
+      >
+        <source src="/tatu-animado.mp4" type="video/mp4" />
+        <source src="/TATU.mp4" type="video/mp4" />
+        <source src="/tatu.mp4" type="video/mp4" />
+        <img 
+          src={armadilloPoster} 
+          alt="Mascote Tatu" 
+          className="w-full h-full object-cover rounded-2xl" 
+        />
+      </video>
     </div>
   );
 };
