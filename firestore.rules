@@ -1,42 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Vagas públicas gerais
-    match /jobs/{jobId} {
-      allow read: if true;
-      allow write: if true;
-    }
-    // Vagas oficiais e sincronizadas da Gupy
-    match /gupy_jobs/{jobId} {
-      allow read: if true;
-      allow write: if true;
-    }
-    // Vagas e logs do SINE-PI
-    match /sine_jobs/{jobId} {
-      allow read: if true;
-      allow write: if true;
-    }
-    match /sine_logs/{logId} {
-      allow read: if true;
-      allow write: if true;
-    }
-    // Mural da Gratidão e Depoimentos
-    match /gratitude/{commentId} {
-      allow read: if true;
-      allow write: if true;
-    }
-    // Métricas e Analytics
-    match /analytics/{docId} {
+    match /{document=**} {
       allow read, write: if true;
-    }
-    // Perfis de usuários
-    match /users/{userId} {
-      allow read, write: if true;
-    }
-    // Empresas
-    match /companies/{companyId} {
-      allow read: if true;
-      allow write: if true;
     }
   }
 }

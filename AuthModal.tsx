@@ -369,8 +369,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     } catch (err: any) {
       console.warn('Google Auth Error:', err);
       if (err.code === 'auth/unauthorized-domain') {
+        const currentDomain = typeof window !== 'undefined' ? window.location.hostname : 'seu-dominio.vercel.app';
         setInfoNotice(
-          'O login com botão Google neste domínio requer autorização no Firebase. Mas você pode entrar ou se cadastrar com qualquer e-mail e senha diretamente no formulário abaixo!'
+          `O domínio "${currentDomain}" precisa ser adicionado aos Domínios Autorizados no Console do Firebase (Authentication > Settings > Authorized domains). Enquanto isso, entre com seu e-mail e senha logo abaixo!`
         );
       } else if (err.code === 'auth/popup-blocked') {
         try {

@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 import * as pdfParseModule from 'pdf-parse';
-const pdfParse: any = (pdfParseModule as any).default || pdfParseModule;
+const pdfParseAny: any = pdfParseModule;
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -171,8 +171,23 @@ export async function downloadPdf(url: string): Promise<Buffer> {
 }
 
 export async function extractPdfText(buffer: Buffer): Promise<string> {
-  const data = await pdfParse(buffer);
-  return data.text || '';
+  try {
+    if (typeof pdfParseAny === 'function') {
+      const data = await pdfParseAny(buffer);
+      return data.text || '';
+    } else if (pdfParseAny.PDFParse) {
+      const parser = new pdfParseAny.PDFParse({ data: buffer });
+      const data = await parser.getText();
+      return data.text || '';
+    } else if (typeof pdfParseAny.default === 'function') {
+      const data = await pdfParseAny.default(buffer);
+      return data.text || '';
+    }
+    return '';
+  } catch (err: any) {
+    console.error('Erro na extração de texto do PDF SINE:', err);
+    throw err;
+  }
 }
 
 export function parseTeresinaJobs(text: string, publicationDate: string, pdfUrl: string): SineJobRecord[] {
