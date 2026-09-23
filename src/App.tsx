@@ -46,6 +46,7 @@ import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { SinePostosView } from './components/SinePostosView';
 import { SineJobModal } from './components/SineJobModal';
 import { SineAdminModal } from './components/SineAdminModal';
+import { HeroMascotVideo } from './components/HeroMascotVideo';
 import { INITIAL_SINE_JOBS } from './data/sineInitialJobs';
 import { SineJob, SineSyncLog } from './types/sine';
 
@@ -65,7 +66,23 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Restaura sessão ativa de administrador se existir
+    // Restaura sessão salva de qualquer usuário (candidato, recrutador ou admin)
+    const savedUserSession = localStorage.getItem('vaiquedacerto_user_session');
+    if (savedUserSession) {
+      try {
+        const parsed = JSON.parse(savedUserSession);
+        if (parsed.user && (!parsed.expiresAt || parsed.expiresAt > Date.now())) {
+          setCurrentUser(parsed.user);
+          setIsAdmin(Boolean(parsed.user.isAdmin || (parsed.user.email && isAdminUser(parsed.user))));
+        } else {
+          localStorage.removeItem('vaiquedacerto_user_session');
+        }
+      } catch (e) {
+        localStorage.removeItem('vaiquedacerto_user_session');
+      }
+    }
+
+    // Restaura sessão de administrador
     const savedAdminSession = localStorage.getItem('vaiquedacerto_admin_session');
     if (savedAdminSession) {
       try {
@@ -93,8 +110,9 @@ export default function App() {
         setCurrentUser(user);
         setIsAdmin(isAdminUser(user));
       } else {
-        const checkSaved = localStorage.getItem('vaiquedacerto_admin_session');
-        if (!checkSaved) {
+        const checkSavedUser = localStorage.getItem('vaiquedacerto_user_session');
+        const checkSavedAdmin = localStorage.getItem('vaiquedacerto_admin_session');
+        if (!checkSavedUser && !checkSavedAdmin) {
           setCurrentUser(null);
           setIsAdmin(false);
         }
@@ -152,6 +170,7 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
+      localStorage.removeItem('vaiquedacerto_user_session');
       localStorage.removeItem('vaiquedacerto_admin_session');
       localStorage.removeItem('vaiquedacerto_admin_user');
       await signOut(auth);
@@ -793,56 +812,76 @@ export default function App() {
           <div className="absolute bottom-0 right-10 w-[400px] h-[300px] bg-amber-500/10 blur-[100px] rounded-full pointer-events-none" />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="text-center max-w-4xl mx-auto mb-10">
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white font-display leading-tight mb-3">
-                Procurando emprego ou o <br className="hidden sm:inline" />
-                talento perfeito?
-              </h1>
-              <span className="block text-4xl sm:text-6xl lg:text-7xl font-black bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-300 bg-clip-text text-transparent font-display drop-shadow-md">
-                Vai Que Dá Certo!
-              </span>
-            </div>
-
-            {/* 3 Feature Highlights */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12 text-center">
-              {/* Feature 1 */}
-              <div className="flex flex-col items-center">
-                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-amber-300/30 flex items-center justify-center mb-3 text-amber-300 shadow-inner">
-                  <FileText className="w-6 h-6" />
+            
+            {/* HERO TOP ROW: TITLE & FEATURES (LEFT/CENTER) + BONEQUINHO CHAMANDO (RIGHT) */}
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-8 mb-10">
+              
+              {/* Left/Center: Headline & Features */}
+              <div className="flex-1 text-center lg:text-left">
+                <div className="mb-6 sm:mb-8">
+                  <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white font-display leading-tight mb-3">
+                    Procurando emprego ou o <br className="hidden sm:inline" />
+                    talento perfeito?
+                  </h1>
+                  <span className="block text-4xl sm:text-6xl lg:text-7xl font-black bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-300 bg-clip-text text-transparent font-display drop-shadow-md">
+                    Vai Que Dá Certo!
+                  </span>
                 </div>
-                <h3 className="text-white font-black text-base sm:text-lg mb-1 font-display">
-                  Remuneração Transparente
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-300 font-medium max-w-xs">
-                  Diga adeus ao &apos;salário a combinar&apos;. Veja os detalhes.
-                </p>
+
+                {/* 3 Feature Highlights */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-2xl text-center lg:text-left">
+                  {/* Feature 1 */}
+                  <div className="flex flex-col items-center lg:items-start">
+                    <div className="w-11 h-11 rounded-2xl bg-white/5 border border-amber-300/30 flex items-center justify-center mb-2.5 text-amber-300 shadow-inner">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-white font-black text-sm sm:text-base mb-1 font-display">
+                      Remuneração Transparente
+                    </h3>
+                    <p className="text-xs text-slate-300 font-medium">
+                      Diga adeus ao &apos;salário a combinar&apos;. Veja os detalhes.
+                    </p>
+                  </div>
+
+                  {/* Feature 2 */}
+                  <div className="flex flex-col items-center lg:items-start">
+                    <div className="w-11 h-11 rounded-2xl bg-white/5 border border-amber-300/30 flex items-center justify-center mb-2.5 text-amber-300 shadow-inner">
+                      <Smartphone className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-white font-black text-sm sm:text-base mb-1 font-display">
+                      Contato Direto
+                    </h3>
+                    <p className="text-xs text-slate-300 font-medium">
+                      Fale com o RH via e-mail ou Zap sem barreiras.
+                    </p>
+                  </div>
+
+                  {/* Feature 3 */}
+                  <div className="flex flex-col items-center lg:items-start">
+                    <div className="w-11 h-11 rounded-2xl bg-white/5 border border-amber-300/30 flex items-center justify-center mb-2.5 text-amber-300 shadow-inner">
+                      <Zap className="w-5 h-5 text-amber-300" />
+                    </div>
+                    <h3 className="text-white font-black text-sm sm:text-base mb-1 font-display">
+                      Contratação Rápida
+                    </h3>
+                    <p className="text-xs text-slate-300 font-medium">
+                      Vagas quentes e reais em Teresina agora.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* Feature 2 */}
-              <div className="flex flex-col items-center">
-                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-amber-300/30 flex items-center justify-center mb-3 text-amber-300 shadow-inner">
-                  <Smartphone className="w-6 h-6" />
-                </div>
-                <h3 className="text-white font-black text-base sm:text-lg mb-1 font-display">
-                  Contato Direto
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-300 font-medium max-w-xs">
-                  Fale com o RH via e-mail ou Zap sem barreiras.
-                </p>
+              {/* Right Side: Vídeo MP4 do Mascote rodando fluido e sem travamentos */}
+              <div className="shrink-0 flex justify-center lg:justify-end">
+                <HeroMascotVideo
+                  onScrollToJobs={() => {
+                    if (activeTab !== 'jobs') setActiveTab('jobs');
+                    const el = document.getElementById('vagas');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                />
               </div>
 
-              {/* Feature 3 */}
-              <div className="flex flex-col items-center">
-                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-amber-300/30 flex items-center justify-center mb-3 text-amber-300 shadow-inner">
-                  <Zap className="w-6 h-6 text-amber-300" />
-                </div>
-                <h3 className="text-white font-black text-base sm:text-lg mb-1 font-display">
-                  Contratação Rápida
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-300 font-medium max-w-xs">
-                  Vagas quentes e reais em Teresina agora.
-                </p>
-              </div>
             </div>
 
             {/* SEARCH BAR BOX */}
@@ -892,7 +931,7 @@ export default function App() {
                 <div className="lg:col-span-2">
                   <button
                     type="submit"
-                    className="w-full h-full py-3.5 px-6 bg-purple-700 hover:bg-purple-800 text-white font-black text-base rounded-2xl shadow-lg hover:shadow-purple-700/25 transition-all flex items-center justify-center gap-2"
+                    className="w-full h-full py-3.5 px-6 bg-purple-700 hover:bg-purple-800 text-white font-black text-base rounded-2xl shadow-lg hover:shadow-purple-700/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                   >
                     <Sparkles className="w-5 h-5 text-yellow-300" />
                     <span>Buscar</span>
