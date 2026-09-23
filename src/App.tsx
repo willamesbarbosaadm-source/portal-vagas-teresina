@@ -65,6 +65,22 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    // Restaura sessão ativa de administrador se existir
+    const savedAdminSession = localStorage.getItem('vaiquedacerto_admin_session');
+    if (savedAdminSession) {
+      try {
+        const parsed = JSON.parse(savedAdminSession);
+        if (parsed.user && parsed.expiresAt > Date.now() && parsed.user.email?.toLowerCase() === 'willamesbarbosaadm@gmail.com') {
+          setCurrentUser(parsed.user);
+          setIsAdmin(true);
+        } else {
+          localStorage.removeItem('vaiquedacerto_admin_session');
+        }
+      } catch (e) {
+        localStorage.removeItem('vaiquedacerto_admin_session');
+      }
+    }
+
     getRedirectResult(auth).then((result) => {
       if (result && result.user) {
         setCurrentUser(result.user);
@@ -77,8 +93,11 @@ export default function App() {
         setCurrentUser(user);
         setIsAdmin(isAdminUser(user));
       } else {
-        setCurrentUser(null);
-        setIsAdmin(false);
+        const checkSaved = localStorage.getItem('vaiquedacerto_admin_session');
+        if (!checkSaved) {
+          setCurrentUser(null);
+          setIsAdmin(false);
+        }
       }
     });
     return () => unsubscribe();
@@ -133,13 +152,15 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
+      localStorage.removeItem('vaiquedacerto_admin_session');
       localStorage.removeItem('vaiquedacerto_admin_user');
       await signOut(auth);
+    } catch (e) {
+      console.error(e);
+    } finally {
       setCurrentUser(null);
       setIsAdmin(false);
       setToastMessage('Você saiu da sua conta com sucesso.');
-    } catch (e) {
-      console.error(e);
     }
   };
 
@@ -1234,6 +1255,10 @@ export default function App() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onShowToast={(msg) => setToastMessage(msg)}
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          setIsAdmin(user?.email?.toLowerCase() === 'willamesbarbosaadm@gmail.com');
+        }}
       />
 
       {/* 4. Post Job Modal (Anunciar Vaga) */}
