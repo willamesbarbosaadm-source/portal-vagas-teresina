@@ -1,9 +1,9 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { syncSineJobs } from "./server/sineProvider";
-import { syncThemosJobs } from "./server/themosProvider";
-import { syncGupyJobs, fetchGupyTeresinaJobs } from "./server/gupyProvider";
+import { syncSineJobs } from "./server/sineProvider.ts";
+import { syncThemosJobs } from "./server/themosProvider.ts";
+import { syncGupyJobs, fetchGupyTeresinaJobs } from "./server/gupyProvider.ts";
 
 async function startServer() {
   const app = express();
@@ -134,9 +134,15 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
+  const server = app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server listening on port ${PORT} (0.0.0.0:${PORT})`);
   });
+
+  server.keepAliveTimeout = 65000;
+  server.headersTimeout = 66000;
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error("FATAL ERROR starting server:", err);
+  process.exit(1);
+});
