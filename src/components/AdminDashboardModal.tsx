@@ -8,6 +8,7 @@ interface AdminDashboardModalProps {
   jobs: Job[];
   gratitudeComments: GratitudeComment[];
   onDeleteJob: (jobId: string) => void;
+  onCleanExpiredJobs?: () => void;
   onShowToast: (msg: string) => void;
   siteStats: {
     today: number;
@@ -22,6 +23,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   jobs,
   gratitudeComments,
   onDeleteJob,
+  onCleanExpiredJobs,
   onShowToast,
   siteStats,
 }) => {
@@ -91,6 +93,32 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               🌟 Desde o lançamento
             </p>
           </div>
+        </div>
+
+        {/* Expiration Policy Banner & Actions */}
+        <div className="mb-6 p-4 bg-amber-50 border-2 border-slate-900 rounded-2xl shadow-[3px_3px_0px_#0f172a] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-amber-950 uppercase tracking-wide">
+                ⏳ Regra de Validade Automática (20 Dias)
+              </span>
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                Ativo & Monitorando
+              </span>
+            </div>
+            <p className="text-xs text-amber-900 font-medium mt-0.5">
+              Vagas publicadas há mais de 20 dias são expiradas e removidas automaticamente para manter a base 100% atualizada.
+            </p>
+          </div>
+          {onCleanExpiredJobs && (
+            <button
+              onClick={onCleanExpiredJobs}
+              className="shrink-0 px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-slate-900 font-black text-xs rounded-xl border-2 border-slate-900 btn-pop flex items-center gap-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Verificar / Limpar Expiradas</span>
+            </button>
+          )}
         </div>
 
         {/* Quick Summary / Moderate Jobs */}

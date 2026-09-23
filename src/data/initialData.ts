@@ -1,6 +1,5 @@
 import { Job, GratitudeComment } from '../types';
 import { GUPY_LIVE_JOBS } from './gupyJobs';
-import { TERESINA_LINKEDIN_INITIAL_JOBS, TERESINA_LINKEDIN_INCOMING_POOL } from './teresinaLinkedInJobs';
 
 const REDE_CACIQUE_JOB: Job = {
   id: 'gupy-rede-cacique-assistente-marketing-teresina-pi',
@@ -39,14 +38,22 @@ const REDE_CACIQUE_JOB: Job = {
   sourceUrl: 'https://redecacique.gupy.io/jobs/12457725?jobBoardSource=gupy_public_page'
 };
 
-// Combine Rede Cacique + All live Gupy jobs + Teresina LinkedIn jobs
+// Combine Rede Cacique + All live Gupy jobs with fresh timestamps (0 a 5 dias)
+const now = Date.now();
 export const INITIAL_JOBS: Job[] = [
   REDE_CACIQUE_JOB,
-  ...GUPY_LIVE_JOBS,
-  ...TERESINA_LINKEDIN_INITIAL_JOBS
+  ...GUPY_LIVE_JOBS.map((j, idx) => {
+    const daysAgo = idx % 6; // 0 a 5 dias
+    const fakeTimestamp = now - (daysAgo * 24 * 60 * 60 * 1000) - ((idx % 24) * 60 * 60 * 1000);
+    return {
+      ...j,
+      timestamp: fakeTimestamp,
+      postedAt: daysAgo === 0 ? 'Publicada hoje' : daysAgo === 1 ? 'Publicada ontem' : `Publicada há ${daysAgo} dias`
+    };
+  })
 ];
 
-export const INCOMING_JOBS_POOL: Job[] = TERESINA_LINKEDIN_INCOMING_POOL || [];
+export const INCOMING_JOBS_POOL: Job[] = [];
 
 export const INITIAL_GRATITUDE: GratitudeComment[] = [];
 

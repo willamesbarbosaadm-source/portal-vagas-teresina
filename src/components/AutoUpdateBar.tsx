@@ -47,10 +47,6 @@ export const AutoUpdateBar: React.FC<AutoUpdateBarProps> = ({
                   <span className="w-1.5 h-1.5 rounded-full bg-slate-900 animate-pulse" />
                   SINE-PI
                 </span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-sky-400 text-slate-900 border border-slate-900">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-900 animate-pulse" />
-                  LinkedIn RHs
-                </span>
                 {newJobsCount > 0 && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-pink-500 text-white border border-slate-900 animate-bounce">
                     <Flame className="w-3 h-3 fill-white" />
@@ -116,7 +112,7 @@ export const AutoUpdateBar: React.FC<AutoUpdateBarProps> = ({
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-yellow-400 hover:bg-yellow-300 text-slate-900 border-2 border-slate-900 btn-pop disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>{isRefreshing ? 'Puxando do LinkedIn...' : 'Puxar do LinkedIn RH'}</span>
+            <span>{isRefreshing ? 'Atualizando Vagas...' : 'Atualizar Vagas'}</span>
           </button>
         </div>
 

@@ -22,7 +22,7 @@ const CATEGORY_MAP = [
 const WORK_MODES: WorkMode[] = ['Todos', 'Remoto', 'Híbrido', 'Presencial'];
 const CONTRACT_TYPES: ContractType[] = ['Todos', 'CLT', 'PJ', 'Estágio', 'Freelance'];
 const LEVELS: ExperienceLevel[] = ['Todos', 'Júnior', 'Pleno', 'Sênior', 'Especialista', 'Sem Experiência'];
-const SOURCES: JobSource[] = ['Todos', 'Talentbrand', 'Gupy', 'LinkedIn', 'Direto', 'Themos Vagas'];
+const SOURCES: JobSource[] = ['Todos', 'Talentbrand', 'Gupy', 'Direto', 'Themos Vagas'];
 
 export const JobFilters: React.FC<JobFiltersProps> = ({
   filters,
@@ -88,17 +88,6 @@ export const JobFilters: React.FC<JobFiltersProps> = ({
             }`}
           >
             <span>💙 Portal Gupy</span>
-          </button>
-
-          <button
-            onClick={() => setFilters((prev) => ({ ...prev, source: filters.source === 'LinkedIn' ? 'Todos' : 'LinkedIn' }))}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black border-2 border-slate-900 transition-all flex items-center gap-1.5 ${
-              filters.source === 'LinkedIn'
-                ? 'bg-sky-500 text-slate-900 btn-pop'
-                : 'bg-sky-50 text-sky-900 hover:bg-sky-100 btn-pop'
-            }`}
-          >
-            <span>💼 LinkedIn RHs (Teresina)</span>
           </button>
         </div>
 

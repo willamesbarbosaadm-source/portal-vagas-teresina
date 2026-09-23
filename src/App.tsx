@@ -26,7 +26,7 @@ import {
 import { Job, GratitudeComment, FilterState, WorkMode, JobSource } from './types';
 import { INITIAL_JOBS, INCOMING_JOBS_POOL, INITIAL_GRATITUDE } from './data/initialData';
 import { auth, db, isAdminUser } from './lib/firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut, getRedirectResult } from 'firebase/auth';
 import { collection, getDocs, addDoc, onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
 import { Navbar } from './components/Navbar';
 import { JobFilters } from './components/JobFilters';
@@ -55,6 +55,9 @@ const STORAGE_KEYS = {
   SAVED: 'vaiquedacerto_saved_v2',
 };
 
+export const MAX_JOB_AGE_DAYS = 20;
+export const MAX_JOB_AGE_MS = MAX_JOB_AGE_DAYS * 24 * 60 * 60 * 1000;
+
 const MAX_COUNTDOWN = 30; // seconds between auto-update checks
 
 export default function App() {
@@ -62,21 +65,20 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const localAdmin = localStorage.getItem('vaiquedacerto_admin_user');
-    if (localAdmin) {
-      try {
-        const parsed = JSON.parse(localAdmin);
-        setCurrentUser(parsed);
-        setIsAdmin(true);
-      } catch (e) {
-        console.error(e);
+    getRedirectResult(auth).then((result) => {
+      if (result && result.user) {
+        setCurrentUser(result.user);
+        setIsAdmin(isAdminUser(result.user));
       }
-    }
+    }).catch((e) => console.warn('Redirect auth result error in App:', e));
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setCurrentUser(user);
         setIsAdmin(isAdminUser(user));
+      } else {
+        setCurrentUser(null);
+        setIsAdmin(false);
       }
     });
     return () => unsubscribe();
@@ -145,23 +147,56 @@ export default function App() {
     setJobs((prev) => prev.filter((j) => j.id !== jobId));
   };
 
-  // Jobs state
+  // Jobs state (filtra e limpa vagas com mais de 20 dias e exclui vagas do LinkedIn)
   const [jobs, setJobs] = useState<Job[]>(() => {
+    const now = Date.now();
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.JOBS);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const existingIds = new Set(parsed.map((j: Job) => j.id));
-          const missingInitial = INITIAL_JOBS.filter((j) => !existingIds.has(j.id));
-          return [...missingInitial, ...parsed];
+          // Mantém apenas vagas válidas dentro de 20 dias e que NÃO sejam do LinkedIn
+          const activeSaved = parsed.filter((j: Job) => 
+            j.source !== 'LinkedIn' && 
+            (!j.timestamp || (now - j.timestamp) <= MAX_JOB_AGE_MS)
+          );
+          const existingIds = new Set(activeSaved.map((j: Job) => j.id));
+          const missingInitial = INITIAL_JOBS.filter((j) => 
+            j.source !== 'LinkedIn' && 
+            !existingIds.has(j.id) && 
+            (!j.timestamp || (now - j.timestamp) <= MAX_JOB_AGE_MS)
+          );
+          return [...missingInitial, ...activeSaved];
         }
       }
     } catch (e) {
       console.error('Error loading jobs from storage:', e);
     }
-    return INITIAL_JOBS;
+    return INITIAL_JOBS.filter((j) => j.source !== 'LinkedIn' && (!j.timestamp || (now - j.timestamp) <= MAX_JOB_AGE_MS));
   });
+
+  const handleCleanExpiredJobs = () => {
+    const now = Date.now();
+    let removed = 0;
+    setJobs(prev => {
+      const remaining = prev.filter(j => {
+        const expired = j.timestamp && (now - j.timestamp) > MAX_JOB_AGE_MS;
+        if (expired) removed++;
+        return !expired;
+      });
+      try {
+        localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(remaining));
+      } catch (e) {
+        console.error(e);
+      }
+      return remaining;
+    });
+    if (removed > 0) {
+      setToastMessage(`🧹 ${removed} vaga(s) com mais de 20 dias foram removidas do portal!`);
+    } else {
+      setToastMessage(`✅ Todas as vagas ativas estão dentro do prazo de validade de 20 dias!`);
+    }
+  };
 
   // Gratitude comments state
   const [gratitudeComments, setGratitudeComments] = useState<GratitudeComment[]>(() => {
@@ -359,6 +394,26 @@ export default function App() {
     }
   }, [savedJobIds]);
 
+  // Rotina contínua: remove automaticamente vagas com mais de 20 dias a cada minuto
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setJobs((prevJobs) => {
+        const active = prevJobs.filter((j) => !j.timestamp || (now - j.timestamp) <= MAX_JOB_AGE_MS);
+        if (active.length !== prevJobs.length) {
+          try {
+            localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(active));
+          } catch (e) {
+            console.error(e);
+          }
+          return active;
+        }
+        return prevJobs;
+      });
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Check URL query parameters on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -449,7 +504,7 @@ export default function App() {
   // Manual refresh trigger
   const handleManualRefresh = () => {
     setIsRefreshing(true);
-    setToastMessage('Buscando vagas mais recentes no Instituto OFC (Sólides) e LinkedIn dos RHs de Teresina...');
+    setToastMessage('Buscando vagas mais recentes no Portal Gupy e canais oficiais de Teresina...');
     setTimeout(() => {
       pullNextLinkedInJob();
       setCountdown(MAX_COUNTDOWN);
@@ -502,7 +557,8 @@ export default function App() {
 
   // Filter and sort jobs
   const filteredJobs = useMemo(() => {
-    let list = jobs;
+    // Exclui completamente vagas do LinkedIn
+    let list = jobs.filter((j) => j.source !== 'LinkedIn');
 
     // If on saved tab, only show saved jobs
     if (activeTab === 'saved') {
@@ -515,6 +571,10 @@ export default function App() {
       const hasValidUrl = Boolean(j.applicationUrl && j.applicationUrl.trim().length > 0 && j.applicationUrl.startsWith('http'));
       return hasValidEmail || hasValidUrl;
     });
+
+    // REGRA DE VALIDADE (20 DIAS): Vagas com mais de 20 dias expiram automaticamente
+    const now = Date.now();
+    list = list.filter((j) => !j.timestamp || (now - j.timestamp) <= MAX_JOB_AGE_MS);
 
     // Query filter
     if (filters.query.trim()) {
@@ -1174,10 +1234,6 @@ export default function App() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onShowToast={(msg) => setToastMessage(msg)}
-        onAdminLogin={(user) => {
-          setCurrentUser(user);
-          setIsAdmin(true);
-        }}
       />
 
       {/* 4. Post Job Modal (Anunciar Vaga) */}
@@ -1211,6 +1267,7 @@ export default function App() {
         jobs={jobs}
         gratitudeComments={gratitudeComments}
         onDeleteJob={handleDeleteJob}
+        onCleanExpiredJobs={handleCleanExpiredJobs}
         onShowToast={(msg) => setToastMessage(msg)}
         siteStats={siteStats}
       />

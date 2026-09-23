@@ -1,22 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import appLogo from '../assets/images/app_logo_1789757595739.jpg';
 import { X, Lock, Mail, User, Sparkles, ArrowRight, KeyRound } from 'lucide-react';
 import { auth, googleProvider, isAdminUser, db } from '../lib/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, updateProfile } from 'firebase/auth';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInWithPopup, 
+  signInWithRedirect, 
+  getRedirectResult, 
+  updateProfile 
+} from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onShowToast: (msg: string) => void;
-  onAdminLogin?: (user: any) => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
   onShowToast,
-  onAdminLogin,
 }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
@@ -25,22 +30,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    getRedirectResult(auth).then(async (result) => {
+      if (result && result.user) {
+        const user = result.user;
+        const isAdmin = isAdminUser(user);
+        await setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid,
+          name: user.displayName || 'Usuário Google',
+          email: user.email,
+          isAdmin,
+          lastLogin: Date.now()
+        }, { merge: true });
+        onShowToast(`🎉 Conectado com Google! ${isAdmin ? '🔑 Modo Administrador ativo.' : ''}`);
+        onClose();
+      }
+    }).catch((err) => {
+      console.warn('Redirect auth result:', err);
+    });
+  }, [onClose, onShowToast]);
 
-  const handleInstantAdminLogin = () => {
-    const adminUser = {
-      uid: 'admin-willames-123',
-      displayName: 'Willames Barbosa (Admin)',
-      email: 'willamesbarbosaadm@gmail.com',
-      isAdmin: true
-    };
-    if (onAdminLogin) {
-      onAdminLogin(adminUser);
-    }
-    localStorage.setItem('vaiquedacerto_admin_user', JSON.stringify(adminUser));
-    onShowToast('🔑 Acesso de Administrador ativado com sucesso!');
-    onClose();
-  };
+  if (!isOpen) return null;
 
   const handleAuthAction = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +84,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       onClose();
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Erro ao autenticar. Verifique seus dados ou use o Acesso Instantâneo de Administrador abaixo.');
+      setError(err.message || 'Erro ao autenticar. Verifique seus dados ou use o Acesso Instantâneo de Administrador.');
     } finally {
       setLoading(false);
     }
@@ -99,8 +109,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       onShowToast(`🎉 Conectado com Google! ${isAdmin ? '🔑 Modo Administrador ativo.' : ''}`);
       onClose();
     } catch (err: any) {
-      console.error(err);
-      setError('Popups do Google podem ser bloqueados em iframes. Use o botão "Acesso Rápido Admin" abaixo para entrar instantaneamente!');
+      console.error('Google Auth Error:', err);
+      if (err.code === 'auth/unauthorized-domain') {
+        const currentDomain = window.location.hostname;
+        setError(
+          `O domínio "${currentDomain}" precisa ser adicionado aos "Domínios Autorizados" no Firebase Console (Authentication > Settings > Authorized domains). Para entrar agora mesmo sem esperar, clique em "Entrar como Willames Barbosa (Admin)" acima!`
+        );
+      } else if (err.code === 'auth/popup-blocked') {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        } catch (redirErr: any) {
+          setError('O popup foi bloqueado pelo seu navegador. Por favor, permita popups ou entre com e-mail e senha.');
+        }
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        setError('A janela do Google foi fechada antes de concluir o login.');
+      } else {
+        setError(err.message || 'Erro ao autenticar com o Google. Tente novamente ou use o acesso rápido.');
+      }
     } finally {
       setLoading(false);
     }
@@ -129,21 +155,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {mode === 'login' ? 'Acessar o Portal' : 'Crie sua conta grátis'}
           </h3>
           <p className="text-slate-600 font-medium text-xs sm:text-sm mt-1">
-            Entre na sua conta ou use o acesso de administrador
+            Entre com sua conta Google ou e-mail cadastrado
           </p>
-        </div>
-
-        {/* Instant Admin Login Banner */}
-        <div className="mb-5 p-4 bg-yellow-100 border-2 border-slate-900 rounded-2xl shadow-[3px_3px_0px_#0f172a] text-center">
-          <p className="text-xs font-black text-slate-900 mb-2">🔑 Acesso Exclusivo para Administrador</p>
-          <button
-            type="button"
-            onClick={handleInstantAdminLogin}
-            className="w-full py-2.5 bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-black text-xs rounded-xl border-2 border-slate-900 btn-pop flex items-center justify-center gap-2"
-          >
-            <KeyRound className="w-4 h-4 text-purple-700" />
-            <span>Entrar como Willames Barbosa (Admin)</span>
-          </button>
         </div>
 
         {error && (
