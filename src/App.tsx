@@ -232,20 +232,7 @@ export default function App() {
   const [selectedSineJob, setSelectedSineJob] = useState<SineJob | null>(null);
   const [isSinePostosOpen, setIsSinePostosOpen] = useState(false);
   const [isSineAdminOpen, setIsSineAdminOpen] = useState(false);
-  const [syncLogs, setSyncLogs] = useState<SineSyncLog[]>([
-    {
-      timestamp: Date.now(),
-      dataHora: '18/09/2026 às 14:00',
-      publicacaoEncontrada: 'Ofertas de vagas em 18 de Setembro de 2026',
-      url: 'https://portal.pi.gov.br/sine/vagas-de-emprego/',
-      vagasIdentificadas: INITIAL_SINE_JOBS.length,
-      vagasNovas: 2,
-      vagasAtualizadas: 1,
-      vagasDuplicadas: 1,
-      vagasDescartadas: 0,
-      erro: false
-    }
-  ]);
+  const [syncLogs, setSyncLogs] = useState<SineSyncLog[]>([]);
 
   // Carrega as vagas reais do SINE-PI. O catálogo local não é usado como dado real.
   useEffect(() => {
@@ -272,21 +259,34 @@ export default function App() {
     };
   }, []);
 
-  const handleTriggerSineSync = () => {
-    const newLog: SineSyncLog = {
-      timestamp: Date.now(),
-      dataHora: new Date().toLocaleString('pt-BR'),
-      publicacaoEncontrada: 'Ofertas de vagas em 18 de Setembro de 2026',
-      url: 'https://portal.pi.gov.br/sine/vagas-de-emprego/',
-      vagasIdentificadas: sineJobs.length,
-      vagasNovas: 1,
-      vagasAtualizadas: 1,
-      vagasDuplicadas: 0,
-      vagasDescartadas: 0,
-      erro: false
-    };
-    setSyncLogs(prev => [newLog, ...prev]);
-    setToastMessage('✅ Sincronização SINE-PI concluída com sucesso!');
+  const handleTriggerSineSync = async () => {
+    try {
+      const response = await fetch('/api/sine/jobs', { cache: 'no-store' });
+      if (!response.ok) throw new Error(`SINE API HTTP ${response.status}`);
+      const data = await response.json();
+
+      if (data?.success && Array.isArray(data.jobs)) {
+        setSineJobs(data.jobs);
+        const now = Date.now();
+        setSyncLogs((prev) => [
+          {
+            timestamp: now,
+            dataHora: new Date(now).toLocaleString('pt-BR'),
+            publicacaoEncontrada: data.publicationTitle || 'Publicação oficial do SINE-PI',
+            url: data.sourceUrl || 'https://portal.pi.gov.br/sine/vagas-de-emprego/',
+            vagasIdentificadas: data.jobs.length,
+            vagasNovas: 0,
+            vagasAtualizadas: 0,
+            vagasDuplicadas: 0,
+            vagasDescartadas: 0,
+            erro: false
+          },
+          ...prev
+        ]);
+      }
+    } catch (error) {
+      console.warn('SINE-PI: falha ao atualizar dados após sincronização:', error);
+    }
   };
 
   useEffect(() => {
