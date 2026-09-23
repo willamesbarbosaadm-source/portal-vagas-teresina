@@ -7,7 +7,7 @@ import path from 'path';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, collection, doc, setDoc, getDocs } from 'firebase/firestore';
 
-function getSineDb() {
+export function getSineDb() {
   try {
     let firebaseConfigData: any = null;
     const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
