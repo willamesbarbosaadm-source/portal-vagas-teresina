@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Outfit', sans-serif;
+  }
+}
+
+/* Vibrant animated background mesh */
+.mesh-bg {
+  background-color: #0f172a;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(109, 40, 217, 0.45) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.4) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(6, 182, 212, 0.35) 0px, transparent 50%),
+    radial-gradient(at 80% 50%, rgba(250, 204, 21, 0.25) 0px, transparent 50%);
+}
+
+.mesh-light {
+  background-color: #faf5ff;
+  background-image: 
+    radial-gradient(at 10% 10%, rgba(236, 72, 153, 0.12) 0px, transparent 40%),
+    radial-gradient(at 90% 20%, rgba(109, 40, 217, 0.12) 0px, transparent 40%),
+    radial-gradient(at 50% 90%, rgba(6, 182, 212, 0.15) 0px, transparent 50%);
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+}
+
+.glass-dark {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Fun playful badges */
+.badge-fun {
+  box-shadow: 3px 3px 0px #0f172a;
+}
+
+.badge-fun-yellow {
+  box-shadow: 3px 3px 0px #facc15;
+}
+
+.badge-fun-pink {
+  box-shadow: 3px 3px 0px #ec4899;
+}
+
+.btn-pop {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 4px 4px 0px #0f172a;
+}
+.btn-pop:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #0f172a;
+}
+.btn-pop:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #0f172a;
+}
+
+.btn-pop-pink {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 4px 4px 0px #ec4899;
+}
+.btn-pop-pink:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #ec4899;
+}
+.btn-pop-pink:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #ec4899;
+}
+
+.btn-pop-yellow {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 4px 4px 0px #facc15;
+}
+.btn-pop-yellow:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #facc15;
+}
+.btn-pop-yellow:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #facc15;
+}
+
+/* Floating badge animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(2deg);
+  }
+}
+
+@keyframes floatDelayed {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(-3deg);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.04);
+  }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: floatDelayed 6s ease-in-out 2s infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
