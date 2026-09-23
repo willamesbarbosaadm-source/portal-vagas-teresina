@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { INITIAL_SINE_JOBS } from '../../src/data/sineInitialJobs.js';
+import { INITIAL_SINE_JOBS } from '../../src/data/sineInitialJobs';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Configura CORS

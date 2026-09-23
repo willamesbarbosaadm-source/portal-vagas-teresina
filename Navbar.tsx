@@ -11,8 +11,7 @@ import {
   Menu, 
   X, 
   LogIn,
-  Search,
-  Download
+  Search
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -210,16 +209,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Anunciar Vaga</span>
             </button>
 
-            <a
-              href="/projeto-completo-vai-que-da-certo.zip"
-              download="projeto-completo-vai-que-da-certo.zip"
-              title="Baixar Código Fonte Completo (.ZIP) para GitHub"
-              className="px-3 sm:px-4 py-2 text-xs font-black text-white bg-slate-900 hover:bg-slate-800 rounded-xl border-2 border-slate-900 flex items-center gap-1.5 transition-all shadow-sm"
-            >
-              <Download className="w-3.5 h-3.5 text-yellow-400" />
-              <span>Baixar ZIP (GitHub)</span>
-            </a>
-
             <button
               onClick={onOpenShareModal}
               title="Divulgar Portal"
@@ -326,14 +315,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <PlusCircle className="w-4 h-4" />
               <span>Anunciar Vaga Grátis</span>
             </button>
-            <a 
-              href="/projeto-completo-vai-que-da-certo.zip"
-              download="projeto-completo-vai-que-da-certo.zip"
-              className="w-full py-3 font-black text-white bg-slate-900 hover:bg-slate-800 rounded-xl border-2 border-slate-900 text-sm flex items-center justify-center gap-2"
-            >
-              <Download className="w-4 h-4 text-yellow-400" />
-              <span>Baixar Código Fonte (.ZIP)</span>
-            </a>
             <button 
               onClick={() => {
                 setIsMobileMenuOpen(false);

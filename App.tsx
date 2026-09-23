@@ -264,21 +264,14 @@ export default function App() {
   const [incomingPool, setIncomingPool] = useState<Job[]>(INCOMING_JOBS_POOL);
   const [newJobsCount, setNewJobsCount] = useState(0);
 
-  // SINE-PI Integration State
+  // SINE-PI Integration State (51 Vagas Reais)
   const [sineJobs, setSineJobs] = useState<SineJob[]>(() => {
     try {
-      const saved = localStorage.getItem('vqc_sine_jobs_v3');
+      const saved = localStorage.getItem('vqc_sine_jobs_v5');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Garante que nenhuma vaga fique com 'Não informado' se houver correspondente detalhado
-          return parsed.map((j: SineJob) => ({
-            ...j,
-            quantidade: (!j.quantidade || String(j.quantidade).includes('Não informado')) ? '1 vaga' : j.quantidade,
-            salario: (!j.salario || String(j.salario).includes('Não informado')) ? 'Piso Salarial / CLT' : j.salario,
-            escolaridade: (!j.escolaridade || String(j.escolaridade).includes('Não informado')) ? 'Médio Completo' : j.escolaridade,
-            experiencia: (!j.experiencia || String(j.experiencia).includes('Não informado')) ? 'Não exigida / 06 Meses' : j.experiencia
-          }));
+        if (Array.isArray(parsed) && parsed.length >= INITIAL_SINE_JOBS.length) {
+          return parsed;
         }
       }
     } catch (e) {
@@ -304,22 +297,34 @@ export default function App() {
     }
   ]);
 
-  // Carrega vagas do SINE-PI via endpoint da API (Vercel Serverless / Cloud Run / Express)
+  // Carrega e sincroniza vagas do SINE-PI (Vercel Serverless / Express)
   useEffect(() => {
+    // Limpa chaves antigas de versões anteriores no navegador
+    try {
+      ['vqc_sine_jobs_v1', 'vqc_sine_jobs_v2', 'vqc_sine_jobs_v3'].forEach(k => localStorage.removeItem(k));
+      localStorage.setItem('vqc_sine_jobs_v5', JSON.stringify(INITIAL_SINE_JOBS));
+    } catch (e) {
+      // ignore
+    }
+
     fetch('/api/sine/jobs')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error('API offline');
+        return res.json();
+      })
       .then((data) => {
-        if (data.success && Array.isArray(data.jobs) && data.jobs.length > 0) {
+        if (data.success && Array.isArray(data.jobs) && data.jobs.length >= 10) {
           setSineJobs(data.jobs);
           try {
-            localStorage.setItem('vqc_sine_jobs_v3', JSON.stringify(data.jobs));
+            localStorage.setItem('vqc_sine_jobs_v5', JSON.stringify(data.jobs));
           } catch (e) {
             console.error(e);
           }
         }
       })
       .catch((err) => {
-        console.log('SINE API background sync:', err);
+        // Fallback garantido usando INITIAL_SINE_JOBS (51 vagas)
+        setSineJobs(INITIAL_SINE_JOBS);
       });
   }, []);
 
