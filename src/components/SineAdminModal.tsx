@@ -42,9 +42,13 @@ export const SineAdminModal: React.FC<SineAdminModalProps> = ({
       });
       const data = await response.json();
       setLastSyncResult(data);
-      onTriggerSync();
+      if (data?.success) {
+        await onTriggerSync();
+        onShowToast('✅ Sincronização real do SINE-PI concluída!');
+      } else {
+        onShowToast(`❌ SINE-PI: ${data?.error || data?.errors?.join?.('; ') || 'sincronização não concluída'}`);
+      }
       setIsSyncing(false);
-      onShowToast('✅ Sincronização real do SINE-PI concluída!');
     } catch (err: any) {
       setIsSyncing(false);
       setLastSyncResult({
@@ -56,8 +60,8 @@ export const SineAdminModal: React.FC<SineAdminModalProps> = ({
   };
 
   const lastLog = syncLogs[0] || {
-    dataHora: '18/09/2026 às 14:00',
-    publicacaoEncontrada: 'Ofertas de vagas em 18 de Setembro de 2026',
+    dataHora: 'Ainda não sincronizado',
+    publicacaoEncontrada: 'Nenhuma publicação processada nesta sessão',
     url: 'https://portal.pi.gov.br/sine/vagas-de-emprego/',
     vagasIdentificadas: importedCount || 0,
     vagasNovas: 0,
@@ -127,7 +131,7 @@ export const SineAdminModal: React.FC<SineAdminModalProps> = ({
                   <Clock className="w-4 h-4 text-purple-700" />
                 </div>
                 <p className="text-sm font-black text-slate-900">{lastLog.dataHora}</p>
-                <p className="text-[11px] text-purple-700 font-bold mt-1">Status: Operacional (PDF Parser Ativo) 🟢</p>
+                <p className="text-[11px] text-purple-700 font-bold mt-1">Status: {syncLogs.length ? 'Última sincronização registrada' : 'Aguardando primeira sincronização real'}</p>
               </div>
 
               <div className="p-4 bg-yellow-50 border-3 border-slate-900 rounded-2xl shadow-[3px_3px_0px_#0f172a]">
