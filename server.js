@@ -7,17 +7,17 @@ import { createServer as createViteServer } from "vite";
 import * as cheerio from "cheerio";
 import * as pdfParseModule from "pdf-parse";
 import crypto from "crypto";
-import fs from "fs";
+import fs2 from "fs";
 import path from "path";
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, collection, doc, setDoc, getDocs } from "firebase/firestore";
+import { initializeApp as initializeApp2, getApps as getApps2, getApp as getApp2 } from "firebase/app";
+import { getFirestore as getFirestore2, collection as collection2, doc, setDoc, getDocs as getDocs2 } from "firebase/firestore";
 var pdfParseAny = pdfParseModule;
 function getSineDb() {
   try {
     let firebaseConfigData = null;
     const configPath = path.join(process.cwd(), "firebase-applet-config.json");
-    if (fs.existsSync(configPath)) {
-      firebaseConfigData = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    if (fs2.existsSync(configPath)) {
+      firebaseConfigData = JSON.parse(fs2.readFileSync(configPath, "utf8"));
     } else if (process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_CONFIG) {
       firebaseConfigData = process.env.FIREBASE_CONFIG ? JSON.parse(process.env.FIREBASE_CONFIG) : {
         apiKey: process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,
@@ -32,9 +32,9 @@ function getSineDb() {
       console.warn("Configura\xE7\xE3o do Firebase n\xE3o encontrada para SINE");
       return null;
     }
-    const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfigData);
+    const app = getApps2().length > 0 ? getApp2() : initializeApp2(firebaseConfigData);
     const dbId = process.env.VITE_FIREBASE_DATABASE_ID || firebaseConfigData.firestoreDatabaseId || "ai-studio-vaiquedcertoempr-2c1e0223-76a1-4104-afc9-edc49ea74413";
-    return getFirestore(app, dbId);
+    return getFirestore2(app, dbId);
   } catch (err) {
     console.error("Erro ao inicializar Firestore em SineProvider:", err);
     return null;
@@ -181,7 +181,7 @@ function parseTeresinaJobs(text, publicationDate, pdfUrl) {
       const title = match[2].trim();
       const education = match[3].trim();
       const experience = match[4].trim();
-      const details = match[5].trim() || "Verificar detalhes nos postos oficiais do SINE-PI.";
+      const details = match[5].trim() || "N\xE3o informado na publica\xE7\xE3o oficial";
       jobs.push(normalizeJob({
         title,
         quantity,
@@ -191,42 +191,70 @@ function parseTeresinaJobs(text, publicationDate, pdfUrl) {
       }, publicationDate, pdfUrl, isPcd));
     } else if (jobs.length > 0) {
       if (!rawLine.startsWith("--") && !rawLine.startsWith("Qt.")) {
+        jobs[jobs.length - 1].descricao_requisitos += " " + rawLine;
         jobs[jobs.length - 1].details += " " + rawLine;
+        jobs[jobs.length - 1].observacoes += " " + rawLine;
       }
     }
   }
   return jobs;
 }
 function normalizeJob(partial, publicationDate, pdfUrl, pcd) {
-  const title = partial.title?.trim() || "Oportunidade SINE-PI";
+  const title = partial.title?.trim() || partial.titulo?.trim() || "Oportunidade SINE-PI";
   const city = "Teresina";
   const state = "PI";
-  const quantity = partial.quantity || 1;
-  const education = partial.education?.trim() || "Consultar no SINE-PI";
-  const experience = partial.experience?.trim() || "Consultar no SINE-PI";
-  const details = partial.details?.trim() || "Verificar detalhes nos postos oficiais do SINE-PI.";
+  const quantity = partial.quantity || partial.quantidade || 1;
+  const education = partial.education?.trim() || partial.escolaridade?.trim() || "N\xE3o informado na publica\xE7\xE3o oficial";
+  const experience = partial.experience?.trim() || partial.experiencia?.trim() || "N\xE3o informado na publica\xE7\xE3o oficial";
+  const details = partial.details?.trim() || partial.descricao_requisitos?.trim() || "N\xE3o informado na publica\xE7\xE3o oficial";
+  const company = partial.empresa?.trim() || "Empresa confidencial (Intermedia\xE7\xE3o SINE-PI)";
   const publicationDateTime = parsePublicationTimestamp(publicationDate);
-  const status = isJobExpired(publicationDateTime) ? "expired" : "active";
-  const rawHashString = `SINE-PI_${publicationDate}_${city}_${title}_${quantity}_${pcd}`;
+  const status = isJobExpired(publicationDateTime) ? "EXPIRADA" : "ATIVA";
+  const rawHashString = `SINE-PI_${publicationDate}_${city}_${title}_${quantity}_${pcd}_${company}`;
   const contentHash = crypto.createHash("sha256").update(rawHashString).digest("hex");
+  const now = Date.now();
   return {
+    titulo: title,
+    empresa: company,
+    cidade: city,
+    estado: state,
+    quantidade: quantity,
+    escolaridade: education,
+    experiencia: experience,
+    descricao_requisitos: details,
+    tipo_vaga: pcd ? "PCD" : "Geral",
+    pcd,
+    data_publicacao: publicationDate,
+    fonte: "SINE-PI",
+    pdf_url: pdfUrl,
+    source_reference: "https://portal.pi.gov.br/sine/vagas-de-emprego/",
+    imported_at: now,
+    hash_vaga: contentHash,
+    status,
+    updated_at: now,
+    // Compatibilidade reversa
+    id: `sine_${contentHash.substring(0, 12)}`,
     source: "SINE-PI",
-    city,
-    state,
     title,
-    quantity,
     education,
     experience,
     details,
-    pcd,
     publicationDate,
     publicationDateTime,
-    importedAt: Date.now(),
+    importedAt: now,
     sourcePdfUrl: pdfUrl,
     sourceUrl: "https://portal.pi.gov.br/sine/vagas-de-emprego/",
-    status,
     contentHash,
-    updatedAt: Date.now()
+    updatedAt: now,
+    salario: "Piso Salarial / A Combinar",
+    tipo_contrato: "CLT",
+    modalidade: "Presencial",
+    beneficios: ["Vale Transporte", "Benef\xEDcios Legais"],
+    observacoes: details,
+    requisitos: [education, `Experi\xEAncia: ${experience}`],
+    cnh: "N\xE3o informado",
+    ultima_verificacao: (/* @__PURE__ */ new Date()).toLocaleString("pt-BR"),
+    isNew: true
   };
 }
 async function syncSineJobs() {
@@ -236,6 +264,7 @@ async function syncSineJobs() {
   let newJobsCount = 0;
   let updatedJobsCount = 0;
   let duplicatesCount = 0;
+  const startedAt = Date.now();
   let pdfUrl = "https://portal.pi.gov.br/sine/vagas-de-emprego/";
   let pdfTitle = "Ofertas de vagas em 23 de Setembro de 2026";
   let publicationDate = "2026-09-23";
@@ -252,29 +281,49 @@ async function syncSineJobs() {
     pJobsCount = allExtracted.filter((j) => j.pcd).length;
     const db = getSineDb();
     if (db) {
-      const sineVagasRef = collection(db, "sine_vagas");
-      const snapshot = await getDocs(sineVagasRef);
+      const sineVagasRef = collection2(db, "sine_vagas");
+      const snapshot = await getDocs2(sineVagasRef);
       const existingMap = /* @__PURE__ */ new Map();
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
-        if (data.contentHash) {
-          existingMap.set(data.contentHash, { id: docSnap.id, ...data });
+        const hash = data.hash_vaga || data.contentHash;
+        if (hash) {
+          existingMap.set(hash, { id: docSnap.id, ...data });
         }
       });
       for (const job of allExtracted) {
-        if (existingMap.has(job.contentHash)) {
-          const existing = existingMap.get(job.contentHash);
+        if (existingMap.has(job.hash_vaga)) {
+          const existing = existingMap.get(job.hash_vaga);
           const docRef = doc(db, "sine_vagas", existing.id);
-          await setDoc(docRef, { ...job, updatedAt: Date.now() }, { merge: true });
+          await setDoc(docRef, {
+            ...job,
+            updated_at: Date.now(),
+            updatedAt: Date.now()
+          }, { merge: true });
+          duplicatesCount++;
           updatedJobsCount++;
         } else {
-          const newDocRef = doc(sineVagasRef);
+          const newDocRef = doc(sineVagasRef, job.hash_vaga);
           await setDoc(newDocRef, job);
           newJobsCount++;
         }
       }
-      const logRef = collection(db, "sine_sync_logs");
+      const logRef = collection2(db, "sine_sync_logs");
       await setDoc(doc(logRef), {
+        startedAt,
+        finishedAt: Date.now(),
+        status: errors.length === 0 ? "success" : "partial",
+        publicationDate,
+        pdfUrl,
+        pdfTitle,
+        foundJobs: allExtracted.length,
+        teresinaJobs: tJobsCount,
+        pcdJobs: pJobsCount,
+        newJobs: newJobsCount,
+        updatedJobs: updatedJobsCount,
+        duplicateJobs: duplicatesCount,
+        errorCount: errors.length,
+        errors,
         timestamp: Date.now(),
         dataHora: (/* @__PURE__ */ new Date()).toLocaleString("pt-BR"),
         publicacaoEncontrada: pdfTitle,
@@ -291,8 +340,20 @@ async function syncSineJobs() {
     try {
       const db = getSineDb();
       if (db) {
-        const logRef = collection(db, "sine_sync_logs");
+        const logRef = collection2(db, "sine_sync_logs");
         await setDoc(doc(logRef), {
+          startedAt,
+          finishedAt: Date.now(),
+          status: "error",
+          publicationDate,
+          pdfUrl,
+          pdfTitle,
+          foundJobs: 0,
+          newJobs: 0,
+          updatedJobs: 0,
+          duplicateJobs: 0,
+          errorCount: errors.length,
+          errors,
           timestamp: Date.now(),
           dataHora: (/* @__PURE__ */ new Date()).toLocaleString("pt-BR"),
           publicacaoEncontrada: pdfTitle,
@@ -326,16 +387,16 @@ async function syncSineJobs() {
 // server/themosProvider.ts
 import * as cheerio2 from "cheerio";
 import crypto2 from "crypto";
-import fs2 from "fs";
+import fs3 from "fs";
 import path2 from "path";
-import { initializeApp as initializeApp2, getApps as getApps2, getApp as getApp2 } from "firebase/app";
-import { getFirestore as getFirestore2, collection as collection2, doc as doc2, setDoc as setDoc2, getDocs as getDocs2 } from "firebase/firestore";
+import { initializeApp as initializeApp3, getApps as getApps3, getApp as getApp3 } from "firebase/app";
+import { getFirestore as getFirestore3, collection as collection3, doc as doc2, setDoc as setDoc2, getDocs as getDocs3 } from "firebase/firestore";
 function getDb() {
   try {
     let firebaseConfigData = null;
     const configPath = path2.join(process.cwd(), "firebase-applet-config.json");
-    if (fs2.existsSync(configPath)) {
-      firebaseConfigData = JSON.parse(fs2.readFileSync(configPath, "utf8"));
+    if (fs3.existsSync(configPath)) {
+      firebaseConfigData = JSON.parse(fs3.readFileSync(configPath, "utf8"));
     } else if (process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_CONFIG) {
       firebaseConfigData = process.env.FIREBASE_CONFIG ? JSON.parse(process.env.FIREBASE_CONFIG) : {
         apiKey: process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,
@@ -350,9 +411,9 @@ function getDb() {
       console.warn("Configura\xE7\xE3o do Firebase n\xE3o encontrada para Themos");
       return null;
     }
-    const app = getApps2().length > 0 ? getApp2() : initializeApp2(firebaseConfigData);
+    const app = getApps3().length > 0 ? getApp3() : initializeApp3(firebaseConfigData);
     const dbId = process.env.VITE_FIREBASE_DATABASE_ID || firebaseConfigData.firestoreDatabaseId || "ai-studio-vaiquedcertoempr-2c1e0223-76a1-4104-afc9-edc49ea74413";
-    return getFirestore2(app, dbId);
+    return getFirestore3(app, dbId);
   } catch (err) {
     console.error("Erro ao inicializar Firestore em ThemosProvider:", err);
     return null;
@@ -406,8 +467,8 @@ async function syncThemosJobs() {
     found = jobs.length;
     const db = getDb();
     if (db) {
-      const collRef = collection2(db, "themos_vagas");
-      const snap = await getDocs2(collRef);
+      const collRef = collection3(db, "themos_vagas");
+      const snap = await getDocs3(collRef);
       const existingMap = /* @__PURE__ */ new Map();
       snap.forEach((d) => {
         const data = d.data();
@@ -445,16 +506,16 @@ async function syncThemosJobs() {
 }
 
 // server/gupyProvider.ts
-import fs3 from "fs";
+import fs4 from "fs";
 import path3 from "path";
-import { initializeApp as initializeApp3, getApps as getApps3, getApp as getApp3 } from "firebase/app";
-import { getFirestore as getFirestore3, collection as collection3, doc as doc3, setDoc as setDoc3 } from "firebase/firestore";
+import { initializeApp as initializeApp4, getApps as getApps4, getApp as getApp4 } from "firebase/app";
+import { getFirestore as getFirestore4, collection as collection4, doc as doc3, setDoc as setDoc3 } from "firebase/firestore";
 function getFirebaseDb() {
   try {
     let firebaseConfigData = null;
     const configPath = path3.join(process.cwd(), "firebase-applet-config.json");
-    if (fs3.existsSync(configPath)) {
-      firebaseConfigData = JSON.parse(fs3.readFileSync(configPath, "utf8"));
+    if (fs4.existsSync(configPath)) {
+      firebaseConfigData = JSON.parse(fs4.readFileSync(configPath, "utf8"));
     } else if (process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_CONFIG) {
       firebaseConfigData = process.env.FIREBASE_CONFIG ? JSON.parse(process.env.FIREBASE_CONFIG) : {
         apiKey: process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,
@@ -469,9 +530,9 @@ function getFirebaseDb() {
       console.warn("Configura\xE7\xE3o do Firebase n\xE3o encontrada para Gupy");
       return null;
     }
-    const app = getApps3().length > 0 ? getApp3() : initializeApp3(firebaseConfigData);
+    const app = getApps4().length > 0 ? getApp4() : initializeApp4(firebaseConfigData);
     const dbId = process.env.VITE_FIREBASE_DATABASE_ID || firebaseConfigData.firestoreDatabaseId || "ai-studio-vaiquedcertoempr-2c1e0223-76a1-4104-afc9-edc49ea74413";
-    return getFirestore3(app, dbId);
+    return getFirestore4(app, dbId);
   } catch (err) {
     console.error("Erro ao inicializar Firestore em GupyProvider:", err);
     return null;
@@ -611,7 +672,7 @@ async function syncGupyJobs() {
   const db = getFirebaseDb();
   let savedCount = 0;
   if (db && jobs.length > 0) {
-    const colRef = collection3(db, "gupy_jobs");
+    const colRef = collection4(db, "gupy_jobs");
     for (const job of jobs) {
       try {
         const docRef = doc3(colRef, job.id);
@@ -2274,12 +2335,39 @@ async function startServer() {
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   });
-  app.get("/api/sine/jobs", (req, res) => {
+  app.get("/api/sine/jobs", async (req, res) => {
+    try {
+      const configPath = path4.join(process.cwd(), "firebase-applet-config.json");
+      if (fs.existsSync(configPath)) {
+        const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+        const app2 = getApps().length > 0 ? getApp() : initializeApp(config);
+        const dbId = config.firestoreDatabaseId || "ai-studio-vaiquedcertoempr-2c1e0223-76a1-4104-afc9-edc49ea74413";
+        const db = getFirestore(app2, dbId);
+        const snap = await getDocs(collection(db, "sine_vagas"));
+        if (!snap.empty) {
+          const firestoreJobs = [];
+          snap.forEach((docSnap) => {
+            firestoreJobs.push({ id: docSnap.id, ...docSnap.data() });
+          });
+          if (firestoreJobs.length > 0) {
+            return res.json({
+              success: true,
+              total: firestoreJobs.length,
+              data_publicacao: "23/09/2026",
+              fonte: "SINE-PI (Firestore)",
+              jobs: firestoreJobs
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Erro ao ler sine_vagas do Firestore:", e);
+    }
     res.json({
       success: true,
       total: INITIAL_SINE_JOBS.length,
       data_publicacao: "23/09/2026",
-      fonte: "SINE-PI (Boletim Oficial)",
+      fonte: "SINE-PI (Fallback Inicial)",
       jobs: INITIAL_SINE_JOBS
     });
   });

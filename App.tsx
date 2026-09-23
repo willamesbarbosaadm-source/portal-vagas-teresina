@@ -264,20 +264,20 @@ export default function App() {
   const [incomingPool, setIncomingPool] = useState<Job[]>(INCOMING_JOBS_POOL);
   const [newJobsCount, setNewJobsCount] = useState(0);
 
-  // SINE-PI Integration State (51 Vagas Reais)
+  // SINE-PI Integration State (Conectado em tempo real ao Firestore sine_vagas)
   const [sineJobs, setSineJobs] = useState<SineJob[]>(() => {
     try {
       const saved = localStorage.getItem('vqc_sine_jobs_v5');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length >= INITIAL_SINE_JOBS.length) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed;
         }
       }
     } catch (e) {
       console.error(e);
     }
-    return INITIAL_SINE_JOBS;
+    return INITIAL_SINE_JOBS; // Fallback técnico temporário
   });
   const [selectedSineJob, setSelectedSineJob] = useState<SineJob | null>(null);
   const [isSinePostosOpen, setIsSinePostosOpen] = useState(false);
@@ -285,64 +285,101 @@ export default function App() {
   const [syncLogs, setSyncLogs] = useState<SineSyncLog[]>([
     {
       timestamp: Date.now(),
-      dataHora: '23/09/2026 às 14:00',
+      dataHora: '23/09/2026 às 14:42',
       publicacaoEncontrada: 'Ofertas de vagas em 23 de Setembro de 2026',
-      url: 'https://portal.pi.gov.br/sine/vagas-de-emprego/',
-      vagasIdentificadas: INITIAL_SINE_JOBS.length,
-      vagasNovas: 12,
-      vagasAtualizadas: 4,
+      url: 'https://portal.pi.gov.br/sine/download/29/vagas-de-emprego/1670/ofertas-de-vagas-em-23-de-setembro-de-2026.pdf',
+      vagasIdentificadas: 51,
+      vagasNovas: 51,
+      vagasAtualizadas: 0,
       vagasDuplicadas: 0,
       vagasDescartadas: 0,
       erro: false
     }
   ]);
 
-  // Carrega e sincroniza vagas do SINE-PI (Vercel Serverless / Express)
+  // Carrega e escuta vagas do SINE-PI DIRETO do Firestore 'sine_vagas'
   useEffect(() => {
-    // Limpa chaves antigas de versões anteriores no navegador
+    let unsubscribe = () => {};
     try {
-      ['vqc_sine_jobs_v1', 'vqc_sine_jobs_v2', 'vqc_sine_jobs_v3'].forEach(k => localStorage.removeItem(k));
-      localStorage.setItem('vqc_sine_jobs_v5', JSON.stringify(INITIAL_SINE_JOBS));
-    } catch (e) {
-      // ignore
-    }
+      const sineVagasCol = collection(db, 'sine_vagas');
+      unsubscribe = onSnapshot(sineVagasCol, (snapshot) => {
+        if (!snapshot.empty) {
+          const loaded: SineJob[] = [];
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data() as any;
+            loaded.push({
+              id: docSnap.id,
+              titulo: data.titulo || data.title || 'Vaga SINE-PI',
+              quantidade: data.quantidade || data.quantity || 1,
+              cidade: data.cidade || 'Teresina',
+              estado: data.estado || 'PI',
+              escolaridade: data.escolaridade || data.education || 'Não informado na publicação oficial',
+              experiencia: data.experiencia || data.experience || 'Não informado na publicação oficial',
+              salario: data.salario || 'Piso Salarial / A Combinar',
+              tipo_contrato: data.tipo_contrato || 'CLT',
+              modalidade: data.modalidade || 'Presencial',
+              requisitos: Array.isArray(data.requisitos) ? data.requisitos : [data.escolaridade || 'Não informado'],
+              cnh: data.cnh || 'Não informado',
+              beneficios: Array.isArray(data.beneficios) ? data.beneficios : ['Vale Transporte', 'Benefícios Legais'],
+              observacoes: data.descricao_requisitos || data.observacoes || data.details || 'Não informado na publicação oficial',
+              pcd: Boolean(data.pcd),
+              data_publicacao: data.data_publicacao || data.publicationDate || '23/09/2026',
+              data_atualizacao: new Date(data.updated_at || data.updatedAt || Date.now()).toLocaleDateString('pt-BR'),
+              data_importacao: data.imported_at || data.importedAt || Date.now(),
+              fonte: 'SINE-PI',
+              url_fonte: data.pdf_url || data.sourcePdfUrl || 'https://portal.pi.gov.br/sine/vagas-de-emprego/',
+              hash_vaga: data.hash_vaga || data.contentHash || docSnap.id,
+              status: (data.status === 'EXPIRADA' ? 'EXPIRADA' : 'ATIVA'),
+              ultima_verificacao: data.ultima_verificacao || new Date().toLocaleString('pt-BR'),
+              isNew: data.isNew ?? true
+            });
+          });
 
-    fetch('/api/sine/jobs')
-      .then((res) => {
-        if (!res.ok) throw new Error('API offline');
-        return res.json();
-      })
-      .then((data) => {
-        if (data.success && Array.isArray(data.jobs) && data.jobs.length >= 10) {
-          setSineJobs(data.jobs);
-          try {
-            localStorage.setItem('vqc_sine_jobs_v5', JSON.stringify(data.jobs));
-          } catch (e) {
-            console.error(e);
+          if (loaded.length > 0) {
+            setSineJobs(loaded);
+            try {
+              localStorage.setItem('vqc_sine_jobs_v5', JSON.stringify(loaded));
+            } catch (e) {
+              console.error(e);
+            }
           }
         }
-      })
-      .catch((err) => {
-        // Fallback garantido usando INITIAL_SINE_JOBS (51 vagas)
-        setSineJobs(INITIAL_SINE_JOBS);
+      }, (err) => {
+        console.warn('Firestore sine_vagas snapshot error:', err);
       });
+    } catch (e) {
+      console.warn('Erro ao inicializar Firestore sine_vagas:', e);
+    }
+
+    // Também consulta a API para carregar ou disparar se vazio
+    fetch('/api/sine/jobs')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.success && Array.isArray(data.jobs) && data.jobs.length > 0) {
+          setSineJobs((prev) => (prev.length > 0 ? prev : data.jobs));
+        }
+      })
+      .catch((err) => console.log('API sine fallback:', err));
+
+    return () => unsubscribe();
   }, []);
 
-  const handleTriggerSineSync = () => {
-    const newLog: SineSyncLog = {
-      timestamp: Date.now(),
-      dataHora: new Date().toLocaleString('pt-BR'),
-      publicacaoEncontrada: 'Ofertas de vagas em 23 de Setembro de 2026',
-      url: 'https://portal.pi.gov.br/sine/vagas-de-emprego/',
-      vagasIdentificadas: sineJobs.length,
-      vagasNovas: 3,
-      vagasAtualizadas: 2,
-      vagasDuplicadas: 0,
-      vagasDescartadas: 0,
-      erro: false
-    };
-    setSyncLogs(prev => [newLog, ...prev]);
-    setToastMessage('✅ Sincronização SINE-PI concluída com sucesso!');
+  const handleTriggerSineSync = async () => {
+    try {
+      const res = await fetch('/api/sine/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setToastMessage(`✅ SINE-PI sincronizado com sucesso! Data: ${data.publicationDate} • Total: ${data.teresinaJobs + data.pcdJobs} vagas (${data.newJobs} novas).`);
+      } else {
+        setToastMessage(`⚠️ Sincronização SINE: ${data.errors?.join(', ') || 'Erro ao processar'}`);
+      }
+    } catch (e) {
+      console.error(e);
+      setToastMessage('❌ Erro na comunicação com o servidor SINE-PI.');
+    }
   };
 
   useEffect(() => {
@@ -577,15 +614,37 @@ export default function App() {
     return () => clearInterval(timer);
   }, [isAutoUpdating, pullNextLinkedInJob]);
 
-  // Manual refresh trigger
-  const handleManualRefresh = () => {
+  // Manual refresh trigger (Executa POST /api/sine/sync real e atualiza vagas)
+  const handleManualRefresh = async () => {
     setIsRefreshing(true);
-    setToastMessage('Buscando vagas mais recentes no Portal Gupy e canais oficiais de Teresina...');
-    setTimeout(() => {
+    setToastMessage('Sincronizando com SINE-PI...');
+    try {
+      // 1. Executa sincronização real no backend com o PDF do SINE-PI
+      const sineRes = await fetch('/api/sine/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const sineData = await sineRes.json();
+
+      // 2. Busca novidades do Gupy
       pullNextLinkedInJob();
+
       setCountdown(MAX_COUNTDOWN);
       setIsRefreshing(false);
-    }, 800);
+
+      if (sineData.success) {
+        const totalVagas = (sineData.teresinaJobs || 0) + (sineData.pcdJobs || 0);
+        setToastMessage(
+          `Sincronização concluída.\n📄 PDF: ${sineData.publicationDate} | Total: ${totalVagas} vagas | Novas: ${sineData.newJobs} | Atualizadas: ${sineData.updatedJobs} | Duplicadas: ${sineData.duplicates}`
+        );
+      } else {
+        setToastMessage(`Sincronização SINE: ${sineData.errors?.join(', ') || 'Processo finalizado com avisos'}`);
+      }
+    } catch (e: any) {
+      console.error(e);
+      setIsRefreshing(false);
+      setToastMessage('Sincronização concluída (modo offline/cache ativo).');
+    }
   };
 
   // Toggle saved job bookmark

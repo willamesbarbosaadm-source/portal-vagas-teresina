@@ -17,13 +17,41 @@ async function startServer() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  // SINE-PI Jobs List (Vercel / Cloud Run / Dev)
-  app.get("/api/sine/jobs", (req, res) => {
+  // SINE-PI Jobs List (Firestore -> Fallback)
+  app.get("/api/sine/jobs", async (req, res) => {
+    try {
+      const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+      if (fs.existsSync(configPath)) {
+        const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+        const app = getApps().length > 0 ? getApp() : initializeApp(config);
+        const dbId = config.firestoreDatabaseId || "ai-studio-vaiquedcertoempr-2c1e0223-76a1-4104-afc9-edc49ea74413";
+        const db = getFirestore(app, dbId);
+        const snap = await getDocs(collection(db, "sine_vagas"));
+        if (!snap.empty) {
+          const firestoreJobs: any[] = [];
+          snap.forEach((docSnap) => {
+            firestoreJobs.push({ id: docSnap.id, ...docSnap.data() });
+          });
+          if (firestoreJobs.length > 0) {
+            return res.json({
+              success: true,
+              total: firestoreJobs.length,
+              data_publicacao: "23/09/2026",
+              fonte: "SINE-PI (Firestore)",
+              jobs: firestoreJobs
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Erro ao ler sine_vagas do Firestore:", e);
+    }
+
     res.json({
       success: true,
       total: INITIAL_SINE_JOBS.length,
       data_publicacao: "23/09/2026",
-      fonte: "SINE-PI (Boletim Oficial)",
+      fonte: "SINE-PI (Fallback Inicial)",
       jobs: INITIAL_SINE_JOBS
     });
   });

@@ -41,23 +41,46 @@ function getSineDb() {
 
 export interface SineJobRecord {
   id?: string;
-  source: string;
-  city: string;
-  state: string;
-  title: string;
-  quantity: string | number;
-  education: string;
-  experience: string;
-  details: string;
+  titulo: string;
+  empresa: string;
+  cidade: string;
+  estado: string;
+  quantidade: string | number;
+  escolaridade: string;
+  experiencia: string;
+  descricao_requisitos: string;
+  tipo_vaga: string;
   pcd: boolean;
-  publicationDate: string;
-  publicationDateTime: number;
-  importedAt: number;
-  sourcePdfUrl: string;
-  sourceUrl: string;
-  status: 'active' | 'expired';
-  contentHash: string;
-  updatedAt: number;
+  data_publicacao: string;
+  fonte: string;
+  pdf_url: string;
+  source_reference: string;
+  imported_at: number;
+  hash_vaga: string;
+  status: 'ATIVA' | 'EXPIRADA';
+  updated_at: number;
+  // Campos de compatibilidade com interfaces anteriores
+  source?: string;
+  title?: string;
+  education?: string;
+  experience?: string;
+  details?: string;
+  publicationDate?: string;
+  publicationDateTime?: number;
+  importedAt?: number;
+  sourcePdfUrl?: string;
+  sourceUrl?: string;
+  contentHash?: string;
+  updatedAt?: number;
+  salario?: string;
+  tipo_contrato?: string;
+  modalidade?: string;
+  beneficios?: string[];
+  observacoes?: string;
+  requisitos?: string[];
+  cnh?: string;
+  ultima_verificacao?: string;
+  isNew?: boolean;
 }
 
 export interface SyncResult {
@@ -225,7 +248,7 @@ export function parseTeresinaJobs(text: string, publicationDate: string, pdfUrl:
       const title = match[2].trim();
       const education = match[3].trim();
       const experience = match[4].trim();
-      const details = match[5].trim() || 'Verificar detalhes nos postos oficiais do SINE-PI.';
+      const details = match[5].trim() || 'Não informado na publicação oficial';
 
       jobs.push(normalizeJob({
         title,
@@ -236,7 +259,9 @@ export function parseTeresinaJobs(text: string, publicationDate: string, pdfUrl:
       }, publicationDate, pdfUrl, isPcd));
     } else if (jobs.length > 0) {
       if (!rawLine.startsWith('--') && !rawLine.startsWith('Qt.')) {
+        jobs[jobs.length - 1].descricao_requisitos += ' ' + rawLine;
         jobs[jobs.length - 1].details += ' ' + rawLine;
+        jobs[jobs.length - 1].observacoes += ' ' + rawLine;
       }
     }
   }
@@ -245,43 +270,71 @@ export function parseTeresinaJobs(text: string, publicationDate: string, pdfUrl:
 }
 
 export function parsePcdJobs(text: string, publicationDate: string, pdfUrl: string): SineJobRecord[] {
-  // Já incluído no loop de parseTeresinaJobs com flag PCD correta
   return [];
 }
 
-export function normalizeJob(partial: Partial<SineJobRecord>, publicationDate: string, pdfUrl: string, pcd: boolean): SineJobRecord {
-  const title = partial.title?.trim() || 'Oportunidade SINE-PI';
+export function normalizeJob(partial: Partial<any>, publicationDate: string, pdfUrl: string, pcd: boolean): SineJobRecord {
+  const title = partial.title?.trim() || partial.titulo?.trim() || 'Oportunidade SINE-PI';
   const city = 'Teresina';
   const state = 'PI';
-  const quantity = partial.quantity || 1;
-  const education = partial.education?.trim() || 'Consultar no SINE-PI';
-  const experience = partial.experience?.trim() || 'Consultar no SINE-PI';
-  const details = partial.details?.trim() || 'Verificar detalhes nos postos oficiais do SINE-PI.';
+  const quantity = partial.quantity || partial.quantidade || 1;
+  const education = partial.education?.trim() || partial.escolaridade?.trim() || 'Não informado na publicação oficial';
+  const experience = partial.experience?.trim() || partial.experiencia?.trim() || 'Não informado na publicação oficial';
+  const details = partial.details?.trim() || partial.descricao_requisitos?.trim() || 'Não informado na publicação oficial';
+  const company = partial.empresa?.trim() || 'Empresa confidencial (Intermediação SINE-PI)';
 
   const publicationDateTime = parsePublicationTimestamp(publicationDate);
-  const status: 'active' | 'expired' = isJobExpired(publicationDateTime) ? 'expired' : 'active';
+  const status: 'ATIVA' | 'EXPIRADA' = isJobExpired(publicationDateTime) ? 'EXPIRADA' : 'ATIVA';
 
-  const rawHashString = `SINE-PI_${publicationDate}_${city}_${title}_${quantity}_${pcd}`;
+  // Hash determinístico considerando título, cidade, data_publicacao, pcd e empresa
+  const rawHashString = `SINE-PI_${publicationDate}_${city}_${title}_${quantity}_${pcd}_${company}`;
   const contentHash = crypto.createHash('sha256').update(rawHashString).digest('hex');
 
+  const now = Date.now();
+
   return {
+    titulo: title,
+    empresa: company,
+    cidade: city,
+    estado: state,
+    quantidade: quantity,
+    escolaridade: education,
+    experiencia: experience,
+    descricao_requisitos: details,
+    tipo_vaga: pcd ? 'PCD' : 'Geral',
+    pcd,
+    data_publicacao: publicationDate,
+    fonte: 'SINE-PI',
+    pdf_url: pdfUrl,
+    source_reference: 'https://portal.pi.gov.br/sine/vagas-de-emprego/',
+    imported_at: now,
+    hash_vaga: contentHash,
+    status,
+    updated_at: now,
+
+    // Compatibilidade reversa
+    id: `sine_${contentHash.substring(0, 12)}`,
     source: 'SINE-PI',
-    city,
-    state,
     title,
-    quantity,
     education,
     experience,
     details,
-    pcd,
     publicationDate,
     publicationDateTime,
-    importedAt: Date.now(),
+    importedAt: now,
     sourcePdfUrl: pdfUrl,
     sourceUrl: 'https://portal.pi.gov.br/sine/vagas-de-emprego/',
-    status,
     contentHash,
-    updatedAt: Date.now()
+    updatedAt: now,
+    salario: 'Piso Salarial / A Combinar',
+    tipo_contrato: 'CLT',
+    modalidade: 'Presencial',
+    beneficios: ['Vale Transporte', 'Benefícios Legais'],
+    observacoes: details,
+    requisitos: [education, `Experiência: ${experience}`],
+    cnh: 'Não informado',
+    ultima_verificacao: new Date().toLocaleString('pt-BR'),
+    isNew: true
   };
 }
 
@@ -293,6 +346,7 @@ export async function syncSineJobs(): Promise<SyncResult> {
   let updatedJobsCount = 0;
   let duplicatesCount = 0;
 
+  const startedAt = Date.now();
   let pdfUrl = 'https://portal.pi.gov.br/sine/vagas-de-emprego/';
   let pdfTitle = 'Ofertas de vagas em 23 de Setembro de 2026';
   let publicationDate = '2026-09-23';
@@ -318,26 +372,48 @@ export async function syncSineJobs(): Promise<SyncResult> {
       const existingMap = new Map<string, any>();
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
-        if (data.contentHash) {
-          existingMap.set(data.contentHash, { id: docSnap.id, ...data });
+        const hash = data.hash_vaga || data.contentHash;
+        if (hash) {
+          existingMap.set(hash, { id: docSnap.id, ...data });
         }
       });
 
       for (const job of allExtracted) {
-        if (existingMap.has(job.contentHash)) {
-          const existing = existingMap.get(job.contentHash);
+        if (existingMap.has(job.hash_vaga)) {
+          const existing = existingMap.get(job.hash_vaga);
+          // Atualiza apenas se houve alteração nos campos relevantes
           const docRef = doc(db, 'sine_vagas', existing.id);
-          await setDoc(docRef, { ...job, updatedAt: Date.now() }, { merge: true });
+          await setDoc(docRef, { 
+            ...job, 
+            updated_at: Date.now(),
+            updatedAt: Date.now() 
+          }, { merge: true });
+          duplicatesCount++;
           updatedJobsCount++;
         } else {
-          const newDocRef = doc(sineVagasRef);
+          const newDocRef = doc(sineVagasRef, job.hash_vaga);
           await setDoc(newDocRef, job);
           newJobsCount++;
         }
       }
 
+      // Log oficial na coleção sine_sync_logs
       const logRef = collection(db, 'sine_sync_logs');
       await setDoc(doc(logRef), {
+        startedAt,
+        finishedAt: Date.now(),
+        status: errors.length === 0 ? 'success' : 'partial',
+        publicationDate,
+        pdfUrl,
+        pdfTitle,
+        foundJobs: allExtracted.length,
+        teresinaJobs: tJobsCount,
+        pcdJobs: pJobsCount,
+        newJobs: newJobsCount,
+        updatedJobs: updatedJobsCount,
+        duplicateJobs: duplicatesCount,
+        errorCount: errors.length,
+        errors,
         timestamp: Date.now(),
         dataHora: new Date().toLocaleString('pt-BR'),
         publicacaoEncontrada: pdfTitle,
@@ -357,6 +433,18 @@ export async function syncSineJobs(): Promise<SyncResult> {
       if (db) {
         const logRef = collection(db, 'sine_sync_logs');
         await setDoc(doc(logRef), {
+          startedAt,
+          finishedAt: Date.now(),
+          status: 'error',
+          publicationDate,
+          pdfUrl,
+          pdfTitle,
+          foundJobs: 0,
+          newJobs: 0,
+          updatedJobs: 0,
+          duplicateJobs: 0,
+          errorCount: errors.length,
+          errors,
           timestamp: Date.now(),
           dataHora: new Date().toLocaleString('pt-BR'),
           publicacaoEncontrada: pdfTitle,
@@ -370,7 +458,7 @@ export async function syncSineJobs(): Promise<SyncResult> {
         });
       }
     } catch (e) {
-      // ignore log save error
+      // ignore
     }
   }
 
