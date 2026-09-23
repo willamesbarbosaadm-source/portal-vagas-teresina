@@ -1,7 +1,7 @@
 export type WorkMode = 'Remoto' | 'Híbrido' | 'Presencial' | 'Todos';
 export type ContractType = 'CLT' | 'PJ' | 'Estágio' | 'Freelance' | 'Todos';
 export type ExperienceLevel = 'Todos' | 'Júnior' | 'Pleno' | 'Sênior' | 'Especialista' | 'Sem Experiência';
-export type JobSource = 'Todos' | 'Talentbrand' | 'Gupy' | 'LinkedIn' | 'Direto' | 'Themos Vagas';
+export type JobSource = 'Todos' | 'Talentbrand' | 'Gupy' | 'LinkedIn' | 'Direto' | 'Themos Vagas' | 'SINE-PI';
 
 export interface Job {
   id: string;
@@ -27,7 +27,7 @@ export interface Job {
   isNew?: boolean;
   isFeatured?: boolean;
   viewsCount: number;
-  source: 'Talentbrand' | 'Gupy' | 'LinkedIn' | 'Direto' | 'Themos Vagas';
+  source: 'Talentbrand' | 'Gupy' | 'LinkedIn' | 'Direto' | 'Themos Vagas' | 'SINE-PI';
   sourceUrl?: string;
 }
 

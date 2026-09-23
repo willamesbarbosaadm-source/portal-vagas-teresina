@@ -131,6 +131,12 @@ export const JobCard: React.FC<JobCardProps> = ({
               ⭐ Selo VAI DÁ CERTO
             </span>
           )}
+          {job.source === 'SINE-PI' && (
+            <span className="px-2.5 py-0.5 rounded-lg bg-purple-100 border border-purple-400 text-purple-900 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" />
+              🏛️ SINE-PI Oficial
+            </span>
+          )}
           {job.isNew && (
             <span className="px-2 py-0.5 rounded-lg bg-pink-100 border border-pink-300 text-pink-700 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
               <Flame className="w-3 h-3 text-pink-500 fill-pink-500" />

@@ -144,14 +144,14 @@ export async function findLatestPdf(html: string): Promise<{ pdfUrl: string; pdf
     $('a').each((_, el) => {
       const href = $(el).attr('href') || '';
       if (href.toLowerCase().includes('.pdf')) {
-        latestPdf.pdfUrl = href.startsWith('http') ? href : `https://portal.pi.gov.br${href}`;
-        latestPdf.pdfTitle = $(el).text().trim() || 'Documento PDF SINE-PI';
+        latestPdf = {
+          pdfUrl: href.startsWith('http') ? href : `https://portal.pi.gov.br${href}`,
+          pdfTitle: $(el).text().trim() || 'Ofertas de vagas SINE-PI',
+          publicationDate: new Date().toISOString().split('T')[0]
+        };
+        return false;
       }
     });
-  }
-
-  if (!latestPdf.pdfUrl) {
-    throw new Error('Nenhum PDF de vagas recente encontrado na página do SINE-PI.');
   }
 
   return latestPdf;
@@ -192,99 +192,71 @@ export async function extractPdfText(buffer: Buffer): Promise<string> {
 
 export function parseTeresinaJobs(text: string, publicationDate: string, pdfUrl: string): SineJobRecord[] {
   const jobs: SineJobRecord[] = [];
-  const teresinaIndex = text.indexOf('TERESINA');
-  if (teresinaIndex === -1) return jobs;
-
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const lines = text.split('\n');
   
-  let isTeresinaSection = false;
-  let isPcdSection = false;
-  let currentJob: Partial<SineJobRecord> = {};
+  const jobStartRegex = /^(\d{1,3})\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç\s\/\-\(\)]+?)\s+(Médio completo|Médio incompleto|Medio incompleto|Medio completo|Fundamental completo|Fundamental Incompleto|Fundamental incompleto|Superior completo|Superior incompleto|Superior Incompleto|Não exigida|Nao exigida)\s+(Não exigida|Nao exigida|\d{1,2}\s+[Mm]eses|\d{1,2}\s+[Aa]nos)\s*(.*)$/i;
+
+  let currentSection = 'TERESINA';
+  let isPcd = false;
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const rawLine = lines[i].trim();
+    if (!rawLine) continue;
 
-    if (line.includes('TERESINA')) {
-      isTeresinaSection = true;
-      isPcdSection = false;
+    if (rawLine.includes('VAGAS DISPONÍVEIS') || rawLine.includes('TERESINA-PI')) {
+      currentSection = 'TERESINA';
+      isPcd = false;
       continue;
     }
-    if (line.includes('EXCLUSIVAS PARA PESSOAS COM DEFICIÊNCIA') || line.includes('PCD')) {
-      isPcdSection = true;
+    if (rawLine.includes('PESSOAS COM DEFICIÊNCIA') || rawLine.includes('PCD')) {
+      isPcd = true;
       continue;
     }
-    if (line.includes('FLORIANO') || line.includes('PARNAÍBA') || line.includes('PICOS') || line.includes('PIRIPIRI')) {
-      isTeresinaSection = false;
+    if (rawLine.includes('FLORIANO') || rawLine.includes('PARNAÍBA') || rawLine.includes('PICOS') || rawLine.includes('PIRIPIRI')) {
+      currentSection = 'OUTRO';
       continue;
     }
 
-    if (isTeresinaSection && !isPcdSection) {
-      const qtyMatch = line.match(/^(\d{1,3})\s+(.+)$/);
-      if (qtyMatch) {
-        if (currentJob.title) {
-          jobs.push(normalizeJob(currentJob, publicationDate, pdfUrl, false));
-          currentJob = {};
-        }
-        currentJob.quantity = parseInt(qtyMatch[1], 10);
-        currentJob.title = qtyMatch[2];
-      } else if (currentJob.title && !currentJob.education) {
-        currentJob.education = line;
-      } else if (currentJob.education && !currentJob.experience) {
-        currentJob.experience = line;
-      } else if (currentJob.experience && !currentJob.details) {
-        currentJob.details = line;
-      }
-    }
-  }
+    if (currentSection !== 'TERESINA') continue;
 
-  if (currentJob.title) {
-    jobs.push(normalizeJob(currentJob, publicationDate, pdfUrl, false));
-  }
+    const match = rawLine.match(jobStartRegex);
+    if (match) {
+      const quantity = parseInt(match[1], 10);
+      const title = match[2].trim();
+      const education = match[3].trim();
+      const experience = match[4].trim();
+      const details = match[5].trim() || 'Verificar detalhes nos postos oficiais do SINE-PI.';
 
-  if (jobs.length === 0) {
-    const sampleTitles = [
-      'Auxiliar de cozinha', 'Auxiliar de linha de produção', 'Bombeiro hidráulico',
-      'Carpinteiro', 'Confeiteiro', 'Eletricista', 'Motorista de caminhão',
-      'Pedreiro', 'Pintor de obras', 'Servente de obras', 'Vendedor pracista'
-    ];
-    sampleTitles.forEach((title, idx) => {
       jobs.push(normalizeJob({
         title,
-        quantity: idx % 3 === 0 ? 5 : 1,
-        education: 'Ensino Médio Completo',
-        experience: '6 meses',
-        details: 'Não informado na publicação oficial'
-      }, publicationDate, pdfUrl, false));
-    });
+        quantity,
+        education,
+        experience,
+        details
+      }, publicationDate, pdfUrl, isPcd));
+    } else if (jobs.length > 0) {
+      if (!rawLine.startsWith('--') && !rawLine.startsWith('Qt.')) {
+        jobs[jobs.length - 1].details += ' ' + rawLine;
+      }
+    }
   }
 
   return jobs;
 }
 
 export function parsePcdJobs(text: string, publicationDate: string, pdfUrl: string): SineJobRecord[] {
-  const jobs: SineJobRecord[] = [];
-  const pcdTitles = ['Atendedor de Balcão (PCD)', 'Auxiliar Administrativo (PCD)', 'Repositor de Mercadorias (PCD)'];
-  pcdTitles.forEach((title) => {
-    jobs.push(normalizeJob({
-      title,
-      quantity: 2,
-      education: 'Ensino Médio Completo',
-      experience: 'Não exigida',
-      details: 'Vaga exclusiva para Pessoa com Deficiência (PCD). Laudo médico necessário.'
-    }, publicationDate, pdfUrl, true));
-  });
-
-  return jobs;
+  // Já incluído no loop de parseTeresinaJobs com flag PCD correta
+  return [];
 }
 
 export function normalizeJob(partial: Partial<SineJobRecord>, publicationDate: string, pdfUrl: string, pcd: boolean): SineJobRecord {
-  const title = partial.title?.trim() || 'Não informado na publicação oficial';
+  const title = partial.title?.trim() || 'Oportunidade SINE-PI';
   const city = 'Teresina';
   const state = 'PI';
-  const quantity = partial.quantity || 'Não informado na publicação oficial';
-  const education = partial.education?.trim() || 'Não informado na publicação oficial';
-  const experience = partial.experience?.trim() || 'Não informado na publicação oficial';
-  const details = partial.details?.trim() || 'Não informado na publicação oficial';
+  const quantity = partial.quantity || 1;
+  const education = partial.education?.trim() || 'Consultar no SINE-PI';
+  const experience = partial.experience?.trim() || 'Consultar no SINE-PI';
+  const details = partial.details?.trim() || 'Verificar detalhes nos postos oficiais do SINE-PI.';
 
   const publicationDateTime = parsePublicationTimestamp(publicationDate);
   const status: 'active' | 'expired' = isJobExpired(publicationDateTime) ? 'expired' : 'active';
@@ -322,8 +294,8 @@ export async function syncSineJobs(): Promise<SyncResult> {
   let duplicatesCount = 0;
 
   let pdfUrl = 'https://portal.pi.gov.br/sine/vagas-de-emprego/';
-  let pdfTitle = 'Ofertas de vagas em 18 de Setembro de 2026';
-  let publicationDate = '2026-09-18';
+  let pdfTitle = 'Ofertas de vagas em 23 de Setembro de 2026';
+  let publicationDate = '2026-09-23';
 
   try {
     const html = await fetchSineJobsPage();
@@ -335,13 +307,9 @@ export async function syncSineJobs(): Promise<SyncResult> {
     const pdfBuffer = await downloadPdf(pdfUrl);
     const pdfText = await extractPdfText(pdfBuffer);
 
-    const teresinaList = parseTeresinaJobs(pdfText, publicationDate, pdfUrl);
-    const pcdList = parsePcdJobs(pdfText, publicationDate, pdfUrl);
-
-    tJobsCount = teresinaList.length;
-    pJobsCount = pcdList.length;
-
-    const allExtracted = [...teresinaList, ...pcdList];
+    const allExtracted = parseTeresinaJobs(pdfText, publicationDate, pdfUrl);
+    tJobsCount = allExtracted.filter(j => !j.pcd).length;
+    pJobsCount = allExtracted.filter(j => j.pcd).length;
 
     const db = getSineDb();
     if (db) {

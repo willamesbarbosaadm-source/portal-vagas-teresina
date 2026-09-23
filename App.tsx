@@ -267,8 +267,11 @@ export default function App() {
   // SINE-PI Integration State
   const [sineJobs, setSineJobs] = useState<SineJob[]>(() => {
     try {
-      const saved = localStorage.getItem('vqc_sine_jobs_v1');
-      if (saved) return JSON.parse(saved);
+      const saved = localStorage.getItem('vqc_sine_jobs_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
     } catch (e) {
       console.error(e);
     }
@@ -976,24 +979,28 @@ export default function App() {
               </div>
 
               {/* SINE-PI OFFICIAL JOBS SECTION */}
-              <div id="sine-pi-section" className="mb-10 p-6 bg-gradient-to-r from-purple-900 via-slate-900 to-indigo-950 rounded-3xl border-4 border-slate-900 text-white shadow-[8px_8px_0px_#facc15]">
+              <div id="sine-pi-section" className="mb-10 p-6 sm:p-8 bg-gradient-to-r from-purple-950 via-slate-900 to-indigo-950 rounded-3xl border-4 border-slate-900 text-white shadow-[8px_8px_0px_#facc15]">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-purple-800">
                   <div>
-                    <span className="text-[10px] font-black px-3 py-1 rounded-full bg-yellow-400 text-slate-900 uppercase tracking-widest">
-                      🏛️ Integração Oficial Governamental
-                    </span>
-                    <h3 className="text-2xl font-black font-display mt-2 flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black px-3 py-1 rounded-full bg-yellow-400 text-slate-900 uppercase tracking-widest">
+                        🏛️ Integração Oficial Governamental
+                      </span>
+                      <span className="text-xs bg-emerald-500 text-white px-2.5 py-0.5 rounded-full font-bold">
+                        {sineJobs.length} Vagas Hoje
+                      </span>
+                    </div>
+                    <h3 className="text-2xl sm:text-3xl font-black font-display mt-2 flex items-center gap-2">
                       <span>Vagas Oficiais do SINE-PI em Teresina</span>
-                      <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold">Ativo</span>
                     </h3>
                     <p className="text-xs text-slate-300 font-medium mt-1">
-                      Atualizado automaticamente a cada 1 hora das publicações oficiais do Governo do Piauí.
+                      Todas as <strong>{sineJobs.length} vagas</strong> extraídas diretamente do boletim diário oficial do Governo do Estado do Piauí (SINE-PI).
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setIsSinePostosOpen(true)}
-                      className="px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-black text-xs rounded-xl border-2 border-slate-900 btn-pop flex items-center gap-1.5"
+                      className="px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-black text-xs rounded-xl border-2 border-slate-900 btn-pop flex items-center gap-1.5 shadow-md"
                     >
                       <span>📍 Postos SINE-PI</span>
                     </button>
@@ -1009,7 +1016,8 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* SINE Jobs Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[640px] overflow-y-auto pr-2 custom-scrollbar">
                   {sineJobs.map((sineJob) => (
                     <div 
                       key={sineJob.id}
@@ -1021,25 +1029,32 @@ export default function App() {
                           <span className="text-[10px] font-black px-2.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-slate-900 uppercase">
                             Fonte: SINE-PI
                           </span>
-                          {sineJob.pcd && (
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded bg-yellow-300 text-slate-900 uppercase">
-                              PCD
+                          {sineJob.pcd ? (
+                            <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-yellow-300 text-slate-900 border border-slate-900 uppercase font-black">
+                              ♿ PCD
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase">
+                              Geral
                             </span>
                           )}
                         </div>
-                        <h4 className="text-lg font-black font-display text-slate-900 mb-1">{sineJob.titulo}</h4>
+                        <h4 className="text-base sm:text-lg font-black font-display text-slate-900 mb-1.5 line-clamp-1">{sineJob.titulo}</h4>
                         <p className="text-xs text-slate-600 font-bold mb-3 flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-purple-700" />
-                          <span>{sineJob.cidade} - {sineJob.estado} • {sineJob.quantidade} vaga(s)</span>
+                          <MapPin className="w-3.5 h-3.5 text-purple-700 shrink-0" />
+                          <span>{sineJob.cidade} - {sineJob.estado} • <strong className="text-purple-700">{sineJob.quantidade}</strong></span>
                         </p>
-                        <div className="space-y-1 mb-4 text-xs font-semibold text-slate-700">
-                          <p>💼 Escolaridade: {sineJob.escolaridade}</p>
-                          <p>💰 Salário: <strong className="text-purple-700">{sineJob.salario}</strong></p>
+                        <div className="space-y-1 mb-3 text-xs font-semibold text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                          <p className="line-clamp-1">💼 <strong>Escolaridade:</strong> {sineJob.escolaridade}</p>
+                          <p className="line-clamp-1">⏳ <strong>Experiência:</strong> {sineJob.experiencia}</p>
+                          <p>💰 <strong>Salário:</strong> <span className="text-purple-700 font-bold">{sineJob.salario}</span></p>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between pt-3 border-t border-slate-200 text-xs font-black text-purple-700">
-                        <span>Publicada em: {sineJob.data_publicacao}</span>
-                        <span className="underline hover:text-purple-900">Ver detalhes →</span>
+                      <div className="flex items-center justify-between pt-2.5 border-t border-slate-200 text-xs font-black text-purple-700">
+                        <span className="text-[11px] text-slate-500">Publicada: {sineJob.data_publicacao}</span>
+                        <span className="underline hover:text-purple-900 flex items-center gap-0.5">
+                          Ver vaga →
+                        </span>
                       </div>
                     </div>
                   ))}
