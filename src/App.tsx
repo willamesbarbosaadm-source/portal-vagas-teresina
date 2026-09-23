@@ -26,7 +26,7 @@ import {
 import { Job, GratitudeComment, FilterState, WorkMode, JobSource } from './types';
 import { INITIAL_JOBS, INCOMING_JOBS_POOL, INITIAL_GRATITUDE } from './data/initialData';
 import { auth, db, isAdminUser } from './lib/firebase';
-import { onAuthStateChanged, signOut, getRedirectResult } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, getDocs, addDoc, onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
 import { Navbar } from './components/Navbar';
 import { JobFilters } from './components/JobFilters';
@@ -66,58 +66,17 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Restaura sessão salva de qualquer usuário (candidato, recrutador ou admin)
-    const savedUserSession = localStorage.getItem('vaiquedacerto_user_session');
-    if (savedUserSession) {
-      try {
-        const parsed = JSON.parse(savedUserSession);
-        if (parsed.user && (!parsed.expiresAt || parsed.expiresAt > Date.now())) {
-          setCurrentUser(parsed.user);
-          setIsAdmin(Boolean(parsed.user.isAdmin || (parsed.user.email && isAdminUser(parsed.user))));
-        } else {
-          localStorage.removeItem('vaiquedacerto_user_session');
-        }
-      } catch (e) {
-        localStorage.removeItem('vaiquedacerto_user_session');
-      }
-    }
-
-    // Restaura sessão de administrador
-    const savedAdminSession = localStorage.getItem('vaiquedacerto_admin_session');
-    if (savedAdminSession) {
-      try {
-        const parsed = JSON.parse(savedAdminSession);
-        if (parsed.user && parsed.expiresAt > Date.now() && parsed.user.email?.toLowerCase() === 'willamesbarbosaadm@gmail.com') {
-          setCurrentUser(parsed.user);
-          setIsAdmin(true);
-        } else {
-          localStorage.removeItem('vaiquedacerto_admin_session');
-        }
-      } catch (e) {
-        localStorage.removeItem('vaiquedacerto_admin_session');
-      }
-    }
-
-    getRedirectResult(auth).then((result) => {
-      if (result && result.user) {
-        setCurrentUser(result.user);
-        setIsAdmin(isAdminUser(result.user));
-      }
-    }).catch((e) => console.warn('Redirect auth result error in App:', e));
-
+    // Firebase Auth é a única fonte de verdade para identidade e privilégios.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setCurrentUser(user);
         setIsAdmin(isAdminUser(user));
       } else {
-        const checkSavedUser = localStorage.getItem('vaiquedacerto_user_session');
-        const checkSavedAdmin = localStorage.getItem('vaiquedacerto_admin_session');
-        if (!checkSavedUser && !checkSavedAdmin) {
-          setCurrentUser(null);
-          setIsAdmin(false);
-        }
+        setCurrentUser(null);
+        setIsAdmin(false);
       }
     });
+
     return () => unsubscribe();
   }, []);
 
@@ -170,9 +129,6 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
-      localStorage.removeItem('vaiquedacerto_user_session');
-      localStorage.removeItem('vaiquedacerto_admin_session');
-      localStorage.removeItem('vaiquedacerto_admin_user');
       await signOut(auth);
     } catch (e) {
       console.error(e);
