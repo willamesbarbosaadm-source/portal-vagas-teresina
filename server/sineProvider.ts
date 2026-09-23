@@ -180,7 +180,7 @@ export function parseTeresinaJobs(text: string, publicationDate: string, pdfUrl:
   const teresinaIndex = text.indexOf('TERESINA');
   if (teresinaIndex === -1) return jobs;
 
-  const lines = text.split('\\n').map(l => l.trim()).filter(Boolean);
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   
   let isTeresinaSection = false;
   let isPcdSection = false;
@@ -232,7 +232,7 @@ export function parseTeresinaJobs(text: string, publicationDate: string, pdfUrl:
 
 export function parsePcdJobs(text: string, publicationDate: string, pdfUrl: string): SineJobRecord[] {
   const jobs: SineJobRecord[] = [];
-  const lines = text.split('\\n').map(l => l.trim()).filter(Boolean);
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   let inTeresinaPcd = false;
   let currentJob: Partial<SineJobRecord> = {};
 
