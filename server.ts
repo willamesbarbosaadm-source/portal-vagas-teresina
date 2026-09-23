@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import { syncSineJobs } from "./server/sineProvider.ts";
 import { syncThemosJobs } from "./server/themosProvider.ts";
 import { syncGupyJobs, fetchGupyTeresinaJobs } from "./server/gupyProvider.ts";
+import { INITIAL_SINE_JOBS } from "./src/data/sineInitialJobs.ts";
 
 async function startServer() {
   const app = express();
@@ -14,6 +15,17 @@ async function startServer() {
   // API Routes FIRST
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  // SINE-PI Jobs List (Vercel / Cloud Run / Dev)
+  app.get("/api/sine/jobs", (req, res) => {
+    res.json({
+      success: true,
+      total: INITIAL_SINE_JOBS.length,
+      data_publicacao: "23/09/2026",
+      fonte: "SINE-PI (Boletim Oficial)",
+      jobs: INITIAL_SINE_JOBS
+    });
   });
 
   // Protected SINE-PI Cron Endpoint

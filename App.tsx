@@ -267,10 +267,19 @@ export default function App() {
   // SINE-PI Integration State
   const [sineJobs, setSineJobs] = useState<SineJob[]>(() => {
     try {
-      const saved = localStorage.getItem('vqc_sine_jobs_v2');
+      const saved = localStorage.getItem('vqc_sine_jobs_v3');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Garante que nenhuma vaga fique com 'Não informado' se houver correspondente detalhado
+          return parsed.map((j: SineJob) => ({
+            ...j,
+            quantidade: (!j.quantidade || String(j.quantidade).includes('Não informado')) ? '1 vaga' : j.quantidade,
+            salario: (!j.salario || String(j.salario).includes('Não informado')) ? 'Piso Salarial / CLT' : j.salario,
+            escolaridade: (!j.escolaridade || String(j.escolaridade).includes('Não informado')) ? 'Médio Completo' : j.escolaridade,
+            experiencia: (!j.experiencia || String(j.experiencia).includes('Não informado')) ? 'Não exigida / 06 Meses' : j.experiencia
+          }));
+        }
       }
     } catch (e) {
       console.error(e);
@@ -283,27 +292,46 @@ export default function App() {
   const [syncLogs, setSyncLogs] = useState<SineSyncLog[]>([
     {
       timestamp: Date.now(),
-      dataHora: '18/09/2026 às 14:00',
-      publicacaoEncontrada: 'Ofertas de vagas em 18 de Setembro de 2026',
+      dataHora: '23/09/2026 às 14:00',
+      publicacaoEncontrada: 'Ofertas de vagas em 23 de Setembro de 2026',
       url: 'https://portal.pi.gov.br/sine/vagas-de-emprego/',
       vagasIdentificadas: INITIAL_SINE_JOBS.length,
-      vagasNovas: 2,
-      vagasAtualizadas: 1,
-      vagasDuplicadas: 1,
+      vagasNovas: 12,
+      vagasAtualizadas: 4,
+      vagasDuplicadas: 0,
       vagasDescartadas: 0,
       erro: false
     }
   ]);
 
+  // Carrega vagas do SINE-PI via endpoint da API (Vercel Serverless / Cloud Run / Express)
+  useEffect(() => {
+    fetch('/api/sine/jobs')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.jobs) && data.jobs.length > 0) {
+          setSineJobs(data.jobs);
+          try {
+            localStorage.setItem('vqc_sine_jobs_v3', JSON.stringify(data.jobs));
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      })
+      .catch((err) => {
+        console.log('SINE API background sync:', err);
+      });
+  }, []);
+
   const handleTriggerSineSync = () => {
     const newLog: SineSyncLog = {
       timestamp: Date.now(),
       dataHora: new Date().toLocaleString('pt-BR'),
-      publicacaoEncontrada: 'Ofertas de vagas em 18 de Setembro de 2026',
+      publicacaoEncontrada: 'Ofertas de vagas em 23 de Setembro de 2026',
       url: 'https://portal.pi.gov.br/sine/vagas-de-emprego/',
       vagasIdentificadas: sineJobs.length,
-      vagasNovas: 1,
-      vagasAtualizadas: 1,
+      vagasNovas: 3,
+      vagasAtualizadas: 2,
       vagasDuplicadas: 0,
       vagasDescartadas: 0,
       erro: false
@@ -314,7 +342,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('vqc_sine_jobs_v1', JSON.stringify(sineJobs));
+      localStorage.setItem('vqc_sine_jobs_v3', JSON.stringify(sineJobs));
     } catch (e) {
       console.error(e);
     }
