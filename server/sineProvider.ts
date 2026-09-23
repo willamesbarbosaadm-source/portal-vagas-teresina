@@ -180,7 +180,7 @@ export function parseTeresinaJobs(text: string, publicationDate: string, pdfUrl:
   const teresinaIndex = text.indexOf('TERESINA');
   if (teresinaIndex === -1) return jobs;
 
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const lines = text.split('\\n').map(l => l.trim()).filter(Boolean);
   
   let isTeresinaSection = false;
   let isPcdSection = false;
@@ -232,35 +232,39 @@ export function parseTeresinaJobs(text: string, publicationDate: string, pdfUrl:
 
 export function parsePcdJobs(text: string, publicationDate: string, pdfUrl: string): SineJobRecord[] {
   const jobs: SineJobRecord[] = [];
-  // PCD deve ser extraído do PDF oficial; não criar cargos/quantidades de demonstração.
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  let inPcd = false;
+  const lines = text.split('\\n').map(l => l.trim()).filter(Boolean);
+  let inTeresinaPcd = false;
   let currentJob: Partial<SineJobRecord> = {};
-  for (const line of lines) {
-    if (/EXCLUSIVAS PARA PESSOAS COM DEFICI[ÊE]NCIA|VAGAS.*PCD/i.test(line)) {
-      inPcd = true;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+
+    if (/^TERESINA(?:\s|[-–:])/i.test(line) && /PCD|DEFICI/i.test(line)) {
+      inTeresinaPcd = true;
       continue;
     }
-    if (inPcd && /^(FLORIANO|PARNA[ÍI]BA|PICOS|PIRIPIRI|TERESINA)\b/i.test(line) && !/PCD/i.test(line)) {
+    if (inTeresinaPcd && /^(FLORIANO|PARNA[ÍI]BA|PICOS|PIRIPIRI)\b/i.test(line)) {
+      break;
+    }
+    if (inTeresinaPcd && /^(TERESINA|FLORIANO|PARNA[ÍI]BA|PICOS|PIRIPIRI)\b/i.test(line) && !/PCD|DEFICI/i.test(line)) {
+      break;
+    }
+
+    if (!inTeresinaPcd) continue;
+
+    const qtyMatch = line.match(/^(\d{1,3})\s+(.+)$/);
+    if (qtyMatch) {
       if (currentJob.title) jobs.push(normalizeJob(currentJob, publicationDate, pdfUrl, true));
-      currentJob = {};
-      if (/TERESINA/i.test(line)) inPcd = false;
-      continue;
-    }
-    if (inPcd) {
-      const qtyMatch = line.match(/^(\d{1,3})\s+(.+)$/);
-      if (qtyMatch) {
-        if (currentJob.title) jobs.push(normalizeJob(currentJob, publicationDate, pdfUrl, true));
-        currentJob = { quantity: parseInt(qtyMatch[1], 10), title: qtyMatch[2] };
-      } else if (currentJob.title && !currentJob.education) {
-        currentJob.education = line;
-      } else if (currentJob.education && !currentJob.experience) {
-        currentJob.experience = line;
-      } else if (currentJob.experience && !currentJob.details) {
-        currentJob.details = line;
-      }
+      currentJob = { quantity: parseInt(qtyMatch[1], 10), title: qtyMatch[2] };
+    } else if (currentJob.title && !currentJob.education) {
+      currentJob.education = line;
+    } else if (currentJob.education && !currentJob.experience) {
+      currentJob.experience = line;
+    } else if (currentJob.experience && !currentJob.details) {
+      currentJob.details = line;
     }
   }
+
   if (currentJob.title) jobs.push(normalizeJob(currentJob, publicationDate, pdfUrl, true));
   return jobs;
 }
@@ -310,8 +314,8 @@ export async function syncSineJobs(): Promise<SyncResult> {
   let duplicatesCount = 0;
 
   let pdfUrl = 'https://portal.pi.gov.br/sine/vagas-de-emprego/';
-  let pdfTitle = 'Ofertas de vagas em 18 de Setembro de 2026';
-  let publicationDate = '2026-09-18';
+  let pdfTitle = 'Aguardando publicação oficial';
+  let publicationDate = '';
 
   try {
     const html = await fetchSineJobsPage();
