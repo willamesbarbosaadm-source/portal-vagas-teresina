@@ -226,39 +226,42 @@ export function parseTeresinaJobs(text: string, publicationDate: string, pdfUrl:
     jobs.push(normalizeJob(currentJob, publicationDate, pdfUrl, false));
   }
 
-  if (jobs.length === 0) {
-    const sampleTitles = [
-      'Auxiliar de cozinha', 'Auxiliar de linha de produção', 'Bombeiro hidráulico',
-      'Carpinteiro', 'Confeiteiro', 'Eletricista', 'Motorista de caminhão',
-      'Pedreiro', 'Pintor de obras', 'Servente de obras', 'Vendedor pracista'
-    ];
-    sampleTitles.forEach((title, idx) => {
-      jobs.push(normalizeJob({
-        title,
-        quantity: idx % 3 === 0 ? 5 : 1,
-        education: 'Ensino Médio Completo',
-        experience: '6 meses',
-        details: 'Não informado na publicação oficial'
-      }, publicationDate, pdfUrl, false));
-    });
-  }
-
+  // Não inventar vagas: se o PDF não puder ser interpretado, retorna vazio e registra o erro na sincronização.
   return jobs;
 }
 
 export function parsePcdJobs(text: string, publicationDate: string, pdfUrl: string): SineJobRecord[] {
   const jobs: SineJobRecord[] = [];
-  const pcdTitles = ['Atendedor de Balcão (PCD)', 'Auxiliar Administrativo (PCD)', 'Repositor de Mercadorias (PCD)'];
-  pcdTitles.forEach((title) => {
-    jobs.push(normalizeJob({
-      title,
-      quantity: 2,
-      education: 'Ensino Médio Completo',
-      experience: 'Não exigida',
-      details: 'Vaga exclusiva para Pessoa com Deficiência (PCD). Laudo médico necessário.'
-    }, publicationDate, pdfUrl, true));
-  });
-
+  // PCD deve ser extraído do PDF oficial; não criar cargos/quantidades de demonstração.
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  let inPcd = false;
+  let currentJob: Partial<SineJobRecord> = {};
+  for (const line of lines) {
+    if (/EXCLUSIVAS PARA PESSOAS COM DEFICI[ÊE]NCIA|VAGAS.*PCD/i.test(line)) {
+      inPcd = true;
+      continue;
+    }
+    if (inPcd && /^(FLORIANO|PARNA[ÍI]BA|PICOS|PIRIPIRI|TERESINA)\b/i.test(line) && !/PCD/i.test(line)) {
+      if (currentJob.title) jobs.push(normalizeJob(currentJob, publicationDate, pdfUrl, true));
+      currentJob = {};
+      if (/TERESINA/i.test(line)) inPcd = false;
+      continue;
+    }
+    if (inPcd) {
+      const qtyMatch = line.match(/^(\d{1,3})\s+(.+)$/);
+      if (qtyMatch) {
+        if (currentJob.title) jobs.push(normalizeJob(currentJob, publicationDate, pdfUrl, true));
+        currentJob = { quantity: parseInt(qtyMatch[1], 10), title: qtyMatch[2] };
+      } else if (currentJob.title && !currentJob.education) {
+        currentJob.education = line;
+      } else if (currentJob.education && !currentJob.experience) {
+        currentJob.experience = line;
+      } else if (currentJob.experience && !currentJob.details) {
+        currentJob.details = line;
+      }
+    }
+  }
+  if (currentJob.title) jobs.push(normalizeJob(currentJob, publicationDate, pdfUrl, true));
   return jobs;
 }
 
