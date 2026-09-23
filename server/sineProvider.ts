@@ -239,14 +239,13 @@ export function parsePcdJobs(text: string, publicationDate: string, pdfUrl: stri
   for (const rawLine of lines) {
     const line = rawLine.trim();
 
-    if (/^TERESINA(?:\s|[-–:])/i.test(line) && /PCD|DEFICI/i.test(line)) {
+    if (/^EXCLUSIVAS PARA PESSOAS COM DEFICI[ÊE]NCIA/i.test(line) ||
+        /^VAGAS.*PCD.*POSTO CENTRAL/i.test(line)) {
       inTeresinaPcd = true;
       continue;
     }
-    if (inTeresinaPcd && /^(FLORIANO|PARNA[ÍI]BA|PICOS|PIRIPIRI)\b/i.test(line)) {
-      break;
-    }
-    if (inTeresinaPcd && /^(TERESINA|FLORIANO|PARNA[ÍI]BA|PICOS|PIRIPIRI)\b/i.test(line) && !/PCD|DEFICI/i.test(line)) {
+
+    if (inTeresinaPcd && /^VAGAS DISPON[ÍI]VEIS.*(FLORIANO|PARNA[ÍI]BA|PICOS|PIRIPIRI|S[ÂA]O JOAO|S[ÃA]O RAIMUNDO)/i.test(line)) {
       break;
     }
 
@@ -255,7 +254,10 @@ export function parsePcdJobs(text: string, publicationDate: string, pdfUrl: stri
     const qtyMatch = line.match(/^(\d{1,3})\s+(.+)$/);
     if (qtyMatch) {
       if (currentJob.title) jobs.push(normalizeJob(currentJob, publicationDate, pdfUrl, true));
-      currentJob = { quantity: parseInt(qtyMatch[1], 10), title: qtyMatch[2] };
+      currentJob = {
+        quantity: parseInt(qtyMatch[1], 10),
+        title: qtyMatch[2]
+      };
     } else if (currentJob.title && !currentJob.education) {
       currentJob.education = line;
     } else if (currentJob.education && !currentJob.experience) {
