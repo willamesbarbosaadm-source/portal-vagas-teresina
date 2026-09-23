@@ -47,7 +47,6 @@ import { SinePostosView } from './components/SinePostosView';
 import { SineJobModal } from './components/SineJobModal';
 import { SineAdminModal } from './components/SineAdminModal';
 import { HeroMascotVideo } from './components/HeroMascotVideo';
-import { INITIAL_SINE_JOBS } from './data/sineInitialJobs';
 import { SineJob, SineSyncLog } from './types/sine';
 
 const STORAGE_KEYS = {
@@ -223,7 +222,7 @@ export default function App() {
   // SINE-PI Integration State
   const [sineJobs, setSineJobs] = useState<SineJob[]>(() => {
     try {
-      const saved = localStorage.getItem('vqc_sine_jobs_v1');
+      const saved = localStorage.getItem('vqc_sine_jobs_v2');
       if (saved) return JSON.parse(saved);
     } catch (e) {
       console.error(e);
@@ -292,7 +291,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('vqc_sine_jobs_v1', JSON.stringify(sineJobs));
+      localStorage.setItem('vqc_sine_jobs_v2', JSON.stringify(sineJobs));
     } catch (e) {
       console.error(e);
     }
