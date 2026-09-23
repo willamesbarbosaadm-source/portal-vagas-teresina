@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, RefreshCw, ShieldCheck, Clock, CheckCircle2, AlertTriangle, FileText, ExternalLink, Settings } from 'lucide-react';
 import { SineSyncLog } from '../types/sine';
+import { auth } from '../lib/firebase';
 
 interface SineAdminModalProps {
   isOpen: boolean;
@@ -29,9 +30,15 @@ export const SineAdminModal: React.FC<SineAdminModalProps> = ({
   const handleManualSyncClick = async () => {
     setIsSyncing(true);
     try {
+      const user = auth.currentUser;
+      if (!user) throw new Error('Faça login como administrador antes de sincronizar.');
+      const idToken = await user.getIdToken();
       const response = await fetch('/api/sine/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        }
       });
       const data = await response.json();
       setLastSyncResult(data);
