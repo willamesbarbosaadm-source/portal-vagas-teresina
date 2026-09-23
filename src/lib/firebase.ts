@@ -43,7 +43,8 @@ const firebaseConfig = {
 
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+const firestoreDbId = import.meta.env.VITE_FIREBASE_DATABASE_ID || firebaseConfigData.firestoreDatabaseId;
+export const db = firestoreDbId ? getFirestore(app, firestoreDbId) : getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
 export const ADMIN_EMAIL = 'willamesbarbosaadm@gmail.com';

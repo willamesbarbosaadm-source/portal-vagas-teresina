@@ -50,7 +50,7 @@ import { INITIAL_SINE_JOBS } from './data/sineInitialJobs';
 import { SineJob, SineSyncLog } from './types/sine';
 
 const STORAGE_KEYS = {
-  JOBS: 'vaiquedacerto_jobs_rede_cacique_v16',
+  JOBS: 'vaiquedacerto_jobs_v20_gupy_teresina',
   GRATITUDE: 'vaiquedacerto_gratitude_v2',
   SAVED: 'vaiquedacerto_saved_v2',
 };
@@ -242,12 +242,42 @@ export default function App() {
     }
   }, [sineJobs]);
 
-  // Fetch live Gupy jobs for Teresina on mount
+  // Fetch live Gupy jobs for Teresina on mount (Firestore + API)
   useEffect(() => {
+    // 1. Listen to Firestore 'gupy_jobs' collection (real-time cross-platform)
+    const gupyCol = collection(db, 'gupy_jobs');
+    const unsubscribe = onSnapshot(gupyCol, (snapshot) => {
+      if (!snapshot.empty) {
+        const firestoreJobs: Job[] = [];
+        snapshot.forEach((docSnap) => {
+          firestoreJobs.push(docSnap.data() as Job);
+        });
+        if (firestoreJobs.length > 0) {
+          setJobs(prevJobs => {
+            const existingIds = new Set(prevJobs.map(j => j.id));
+            const newJobs = firestoreJobs.filter(j => !existingIds.has(j.id));
+            if (newJobs.length > 0) {
+              const updated = [...newJobs, ...prevJobs];
+              try {
+                localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(updated));
+              } catch (e) {
+                console.error(e);
+              }
+              return updated;
+            }
+            return prevJobs;
+          });
+        }
+      }
+    }, (err) => {
+      console.warn('Firestore gupy_jobs snapshot:', err);
+    });
+
+    // 2. Fetch from backend API
     fetch('/api/gupy/jobs')
-      .then(res => res.json())
+      .then(res => res.ok ? res.json() : null)
       .then(data => {
-        if (data.success && Array.isArray(data.jobs) && data.jobs.length > 0) {
+        if (data && data.success && Array.isArray(data.jobs) && data.jobs.length > 0) {
           setJobs(prevJobs => {
             const existingIds = new Set(prevJobs.map(j => j.id));
             const newGupyJobs = data.jobs.filter((j: Job) => !existingIds.has(j.id));
@@ -265,6 +295,8 @@ export default function App() {
         }
       })
       .catch(err => console.log('Gupy live fetch:', err));
+
+    return () => unsubscribe();
   }, []);
 
   // Active view tab

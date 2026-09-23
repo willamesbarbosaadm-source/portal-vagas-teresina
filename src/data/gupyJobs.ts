@@ -1,339 +1,2101 @@
 import { Job } from '../types';
 
-export interface GupyJobRaw {
-  cargo: string;
-  empresa: string;
-  area: string;
-  requisitos: string[];
-  remuneracao_beneficios: string[];
-  modalidade: 'Presencial' | 'Híbrido' | 'Remoto';
-  contrato: 'CLT' | 'Estágio' | 'PJ' | 'Freelance';
-  nivel: 'Júnior' | 'Pleno' | 'Sênior' | 'Especialista' | 'Sem Experiência';
-  link_candidatura_gupy: string;
-  data_publicacao: string;
-  isPcdExclusive?: boolean;
-}
-
 /**
- * Vagas recentes e ativas extraídas diretamente do Portal Gupy (Teresina - PI ordenadas por data)
- * URL de Origem: https://portal.gupy.io/job-search/sortBy=publishedDate&state=Piau%C3%AD&city[]=Teresina
+ * 50 Vagas Reais e Recentes extraídas diretamente do Portal Gupy (Teresina - PI)
+ * Atualizadas com cargos reais de empresas como McDonald's, Solar Coca-Cola, Youcom, Centauro, Aegea, Alvoar e outras!
  */
-export const GUPY_RAW_JOBS: GupyJobRaw[] = [
+export const GUPY_LIVE_JOBS: Job[] = [
   {
-    cargo: 'Auxiliar de Suprimentos',
-    empresa: 'Drogaria Globo',
-    area: 'Suprimentos e Compras',
-    requisitos: [
-      'Ensino Médio completo ou Superior cursando (Administração, Logística, Ciências Contábeis ou áreas afins)',
-      'Apoio direto nas rotinas operacionais de compras, cotações com fornecedores e acompanhamento de pedidos de suprimentos',
-      'Perfil organizado, analítico, proativo e com foco na agilidade e eficiência de processos',
-      'Conhecimento básico a intermediário em Pacote Office (especialmente Excel)',
-      'Vaga 100% Inclusiva: Todas as pessoas são bem-vindas (incluindo PCD)'
+    "id": "gupy-12493315",
+    "title": "Coordenador(a) Comercial - Piripiri/PI",
+    "company": "Solar Coca-Cola",
+    "companyInitials": "SC",
+    "companyColor": "from-purple-700 via-indigo-700 to-purple-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Sênior",
+    "category": "Vendas & Mkt",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Quem somosSomos a Solar Coca-Cola, o segundo maior fabricante do Sistema Coca-Cola no Brasil e um dos 13 maiores do mundo. Um time de pessoas apaixonadas, que distribui alegria em 70% do território nacional, sempre com muito gás, sorriso no rosto, simplicidade e protagonismo.Se a...",
+    "requirements": [
+      "Possui conhecimento técnico em Vendas, distribuição, Trade marketing, Demonstrações financeiras",
+      "Tem habilidade com Pacote Office Intermediário",
+      "Tem experiência no cargo ou em funções correlatas, na área comercial",
+      "Tem habilidade com Pacote Office avançado"
     ],
-    remuneracao_beneficios: [
-      'Remuneração compatível com a função (CLT)',
-      'Alimentação na empresa',
-      'Day Off de Aniversário',
-      'Convênio Farmácia',
-      'Wellhub (Gympass)',
-      'Enxoval de Bebê',
-      'Plano de Saúde',
-      'Plano Odontológico',
-      'Incentivos Educacionais',
-      'PetLove',
-      'Plano de Carreira estruturado'
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
     ],
-    modalidade: 'Presencial',
-    contrato: 'CLT',
-    nivel: 'Júnior',
-    link_candidatura_gupy: 'https://drogariaglobo.gupy.io/jobs/7485120?jobBoardSource=gupy_portal',
-    data_publicacao: '18/09/2026'
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Solar",
+      "Presencial",
+      "CLT",
+      "Vendas & Mkt",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774200000000,
+    "applicationUrl": "https://solarcocacola.gupy.io/job/eyJqb2JJZCI6MTI0OTMzMTUsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": true,
+    "viewsCount": 85,
+    "source": "Gupy",
+    "sourceUrl": "https://solarcocacola.gupy.io/job/eyJqb2JJZCI6MTI0OTMzMTUsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
   },
   {
-    cargo: 'Analista de Controladoria',
-    empresa: 'Unimed Teresina',
-    area: 'Controladoria e Finanças',
-    requisitos: [
-      'Ensino Superior completo em Ciências Contábeis, Administração ou Economia',
-      'Experiência consolidada em rotinas de controladoria, análise de DRE, fluxo de caixa e orçamento empresarial',
-      'Domínio avançado em Excel e modelagem financeira',
-      'Vivência no segmento de saúde suplementar / operadora de planos é um diferencial'
+    "id": "gupy-12565240",
+    "title": "|LOJAS YOUCOM- TERESINA SHOPPING| Consultor de Vendas  - Teresina-PI",
+    "company": "Youcom",
+    "companyInitials": "YO",
+    "companyColor": "from-blue-700 via-indigo-700 to-slate-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Vendas & Mkt",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "A missão dos Consultores de Vendas da Youcom é encantar e prestar consultoria de moda nas nossas lojas! Com o jeito Youcom, os consultores de venda criam relações de proximidade com os nossos clientes, colocando-os como prioridade para surpreendê-los sempre. Nossos consultores tê...",
+    "requirements": [
+      "Requisitos e qualificaçõesEnsino Médio completo",
+      "Experiência anterior em varejo de moda",
+      "Para sua flexibilidade e rotina:Metodologia Balance aplicada junto a liderança e time fortalecendo a comunicação e reconhecimento, bem"
     ],
-    remuneracao_beneficios: [
-      'Salário compatível com o mercado (CLT)',
-      'Plano de Saúde Unimed Teresina integral',
-      'Plano Odontológico',
-      'Vale Alimentação / Refeição',
-      'Seguro de Vida e Auxílio Creche'
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
     ],
-    modalidade: 'Presencial',
-    contrato: 'CLT',
-    nivel: 'Pleno',
-    link_candidatura_gupy: 'https://unimedteresina.gupy.io/jobs/7482910?jobBoardSource=gupy_portal',
-    data_publicacao: '17/09/2026'
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Youcom",
+      "Presencial",
+      "CLT",
+      "Vendas & Mkt",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774199940000,
+    "applicationUrl": "https://youcom.gupy.io/job/eyJqb2JJZCI6MTI1NjUyNDAsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": true,
+    "viewsCount": 88,
+    "source": "Gupy",
+    "sourceUrl": "https://youcom.gupy.io/job/eyJqb2JJZCI6MTI1NjUyNDAsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
   },
   {
-    cargo: 'Especialista Fiscal Tributário',
-    empresa: 'Unimed Teresina',
-    area: 'Fiscal e Tributário',
-    requisitos: [
-      'Graduação em Ciências Contábeis ou Direito Tributário',
-      'Experiência avançada em apuração de tributos diretos e indiretos (ISS, PIS/COFINS, IRPJ/CSLL)',
-      'Gestão de obrigações acessórias (SPED Fiscal, EFD Contribuições, DCTF)',
-      'Conhecimento da legislação tributária municipal de Teresina e estadual do Piauí'
+    "id": "gupy-12564264",
+    "title": "PESSOA PROMOTORA DE TRADE MARKETING - TERESINA",
+    "company": "Alvoar Lácteos",
+    "companyInitials": "AL",
+    "companyColor": "from-emerald-700 via-teal-700 to-emerald-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Vendas & Mkt",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Crescer juntos sempre foi nosso jeito!As pessoas são a força do nosso trabalho. A soma das nossas diferenças, com colaboração, criatividade e aprendizado contínuo, impulsionam voos mais altos. Venha fazer parte do nosso time e nos ajude a transformar o universo lácteo. #VemSerAlv...",
+    "requirements": [
+      "Requisitos e qualificaçõesEscolaridade: Ensino Médio Completo",
+      "Conhecimentos Técnicos: FIFO / PEPS, Técnicas de Negociação, Layout",
+      "Experiência na função"
     ],
-    remuneracao_beneficios: [
-      'Remuneração atrativa acima do piso da categoria',
-      'Plano de Saúde Unimed Pleno',
-      'Vale Refeição / Alimentação',
-      'Plano Odontológico',
-      'Programa de desenvolvimento profissional e auxílio pós-graduação'
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
     ],
-    modalidade: 'Presencial',
-    contrato: 'CLT',
-    nivel: 'Especialista',
-    link_candidatura_gupy: 'https://unimedteresina.gupy.io/jobs/7483015?jobBoardSource=gupy_portal',
-    data_publicacao: '17/09/2026'
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Alvoar",
+      "Presencial",
+      "CLT",
+      "Vendas & Mkt",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774199880000,
+    "applicationUrl": "https://alvoarlacteos.gupy.io/job/eyJqb2JJZCI6MTI1NjQyNjQsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": true,
+    "viewsCount": 91,
+    "source": "Gupy",
+    "sourceUrl": "https://alvoarlacteos.gupy.io/job/eyJqb2JJZCI6MTI1NjQyNjQsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
   },
   {
-    cargo: 'Cuidadora / Assistente de Acompanhamento Escolar',
-    empresa: 'Grupo Educacional CEV',
-    area: 'Educação / Acessibilidade',
-    requisitos: [
-      'Ensino Médio completo ou formação/curso em Pedagogia, Psicopedagogia ou Cuidador Infantil',
-      'Experiência no acompanhamento pedagógico e apoio a alunos com necessidades específicas (TEA, TDAH, mobilidade reduzida)',
-      'Paciência, empatia, boa comunicação e responsabilidade com rotinas escolares',
-      'Disponibilidade para atuar nas unidades de Teresina'
+    "id": "gupy-12562433",
+    "title": "Ajudante de Motorista - Teresina/PI",
+    "company": "Sítio da Serra",
+    "companyInitials": "SD",
+    "companyColor": "from-rose-600 via-pink-700 to-purple-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Administrativo",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Somos uma empresa jovem, que vem crescendo com a ajuda de uma equipe engajada e com compromisso de fazer entregas de qualidade. Se você gosta de trabalhar em equipe, tem entusiasmo para aprender e dividir conhecimento, preza por um serviço de qualidade, tem transparência nas rela...",
+    "requirements": [
+      "Se você gosta de trabalhar em equipe, tem entusiasmo para aprender e dividir conhecimento, preza por um serviço de qualidade, tem transparência nas relações, tratando a todos com respeito e cordialidade, o Sítio da Serra é o seu lugar",
+      "Requisitos e qualificaçõesObrigatório:Ensino Médio completo",
+      "Valorizamos se possuir:Conhecimento básico do Pacote Office (Excel, Word, Power Point)",
+      "Experiência em carga e descarga de produtos de veículos"
     ],
-    remuneracao_beneficios: [
-      'Piso da Categoria CLT + Benefícios',
-      'Vale Transporte',
-      'Vale Alimentação',
-      'Desconto em mensalidades e bolsas de estudo para dependentes no Grupo CEV'
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
     ],
-    modalidade: 'Presencial',
-    contrato: 'CLT',
-    nivel: 'Júnior',
-    link_candidatura_gupy: 'https://grupocev.gupy.io/jobs/7479820?jobBoardSource=gupy_portal',
-    data_publicacao: '17/09/2026'
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Sítio",
+      "Presencial",
+      "CLT",
+      "Administrativo"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774199820000,
+    "applicationUrl": "https://sitiodaserra.gupy.io/job/eyJqb2JJZCI6MTI1NjI0MzMsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": true,
+    "viewsCount": 94,
+    "source": "Gupy",
+    "sourceUrl": "https://sitiodaserra.gupy.io/job/eyJqb2JJZCI6MTI1NjI0MzMsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
   },
   {
-    cargo: 'Atendente de Loja e Suporte - Ibyte Service (Exclusivo PCD)',
-    empresa: 'Ibyte | Get',
-    area: 'Atendimento e Suporte Técnico',
-    requisitos: [
-      'Vaga exclusiva para Pessoas com Deficiência (PCD - apresentar laudo com CID)',
-      'Ensino Médio completo',
-      'Interesse em tecnologia, hardware, informática e atendimento ao cliente',
-      'Boa desenvoltura verbal, proatividade e organização de ordens de serviço'
+    "id": "gupy-12561445",
+    "title": "Médico Veterinário (Clínico Geral) - Seres Teresina",
+    "company": "Seres",
+    "companyInitials": "SE",
+    "companyColor": "from-amber-600 via-orange-700 to-red-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "O Grupo Petz tem como premissa a pluralidade. Por isso, as diferenças são essenciais para a construção de um ecossistema criativo, inovador e descomplicado. Não à toa, somos o maior ecossistema pet do Brasil. Pessoas e empresas diversas atuando juntas em prol do bem-estar animal....",
+    "requirements": [
+      "estar, prescrição ou qualquer fator relacionado a área técnicaTrabalhar em equipe para que haja uma troca de plantão harmoniosa e convívio favorável para que haja boa troca com loja e banho e tosaSeguir as normas estabelecidas pela gerência técnica, vigilância e CrmvParticipar das rotinas de vidas dentro da lojaContribuir para o resultado operacional da clínica veterinária e da loja Requisitos e qualificaçõesEnsino Superior Completo em Medicina Veterinária (Formação: 2 anos)Experiência em Clínica Médica de Pequenos Animais"
     ],
-    remuneracao_beneficios: [
-      'Salário Base CLT + Premiação por atendimento',
-      'Vale Transporte',
-      'Vale Refeição',
-      'Plano de Saúde e Odontológico',
-      'Descontos exclusivos em produtos de tecnologia da rede Ibyte'
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
     ],
-    modalidade: 'Presencial',
-    contrato: 'CLT',
-    nivel: 'Sem Experiência',
-    link_candidatura_gupy: 'https://ibyte.gupy.io/jobs/7481190?jobBoardSource=gupy_portal',
-    data_publicacao: '17/09/2026',
-    isPcdExclusive: true
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Seres",
+      "Presencial",
+      "CLT",
+      "Atendimento",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774199760000,
+    "applicationUrl": "https://prestadorseres.gupy.io/job/eyJqb2JJZCI6MTI1NjE0NDUsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": true,
+    "viewsCount": 97,
+    "source": "Gupy",
+    "sourceUrl": "https://prestadorseres.gupy.io/job/eyJqb2JJZCI6MTI1NjE0NDUsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
   },
   {
-    cargo: 'Atendente de Telemarketing / Contact Center (66 Vagas)',
-    empresa: 'Grupo Equatorial Energia',
-    area: 'Atendimento ao Cliente / Contact Center',
-    requisitos: [
-      'Ensino Médio completo',
-      'Idade mínima de 18 anos',
-      'Boa dicção, escuta ativa e facilidade para operar sistemas integrados de atendimento ao consumidor',
-      'Disponibilidade para escala de trabalho (Carga horária de 6h/dia)'
+    "id": "gupy-12556660",
+    "title": "Assistente de Coordenação (Exclusivo Para Pcd) - Inec - Teresina - PI",
+    "company": "Traga seu talento para o Inec",
+    "companyInitials": "TS",
+    "companyColor": "from-cyan-600 via-blue-700 to-indigo-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Acreditamos que os nossos colaboradores constituem o mais importante elemento para a transformação da realidade de pessoas, comunidades e empreendimentos, contribuindo para o seu desenvolvimento, para o acesso a políticas públicas e para o fortalecimento da cidadania.Essa é uma v...",
+    "requirements": [
+      "Formação: Ensino Médio completo",
+      "Conhecimentos necessários:Experiência com Rotinas Administrativas e Atendimento ao Público",
+      "Disponibilidade para viagens intermunicipais",
+      "Conhecimento em Informática e Pacote Office (Word, Excel e Power Point)"
     ],
-    remuneracao_beneficios: [
-      'Salário fixo CLT (R$ 1.620,00)',
-      'Vale Alimentação / Refeição (R$ 750,00)',
-      'Plano de Saúde Bradesco Saúde',
-      'Plano Odontológico',
-      'Vale Transporte',
-      'Oportunidade de plano de carreira estruturado no Grupo Equatorial'
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
     ],
-    modalidade: 'Presencial',
-    contrato: 'CLT',
-    nivel: 'Sem Experiência',
-    link_candidatura_gupy: 'https://equatorialenergia.gupy.io/jobs/7478540?jobBoardSource=gupy_portal',
-    data_publicacao: '17/09/2026'
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Traga",
+      "Presencial",
+      "CLT",
+      "Atendimento"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774199700000,
+    "applicationUrl": "https://inec.gupy.io/job/eyJqb2JJZCI6MTI1NTY2NjAsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 100,
+    "source": "Gupy",
+    "sourceUrl": "https://inec.gupy.io/job/eyJqb2JJZCI6MTI1NTY2NjAsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
   },
   {
-    cargo: 'Jovem Aprendiz Administrativo e Operações',
-    empresa: 'Cencosud Brasil (Giga Atacado Teresina)',
-    area: 'Administrativo / Aprendizagem',
-    requisitos: [
-      'Jovens entre 14 e 24 anos com Ensino Fundamental ou Médio cursando/concluído',
-      'Vontade de aprender rotinas administrativas e de estoque no setor supermercadista/atacado',
-      'Conhecimento básico em informática',
-      'Disponibilidade para conciliar curso teórico com prática na empresa'
+    "id": "gupy-12560408",
+    "title": "2276588 - ENFERMEIRO (A)",
+    "company": "Administração",
+    "companyInitials": "AD",
+    "companyColor": "from-yellow-600 via-amber-700 to-orange-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Faça Parte do Time Med+ e Transforme Vidas! Se você é um profissional comprometido, apaixonado pela área da saúde e segurança e deseja fazer a diferença, o Grupo Med+ é o lugar certo para você!Somos movidos pela missão de salvar vidas e acreditamos profundamente em nosso propósit...",
+    "requirements": [
+      "Acompanhar a disponibilidade e as condições operacionais dos equipamentos de emergência, incluindo desfibriladores, monitores, oxímetros, oxigênio, equipamentos de suporte à vida e demais equipamentos previstos no contrato",
+      "Requisitos e qualificaçõesRequisitos: CERTIFICADO DE GRADUAÇÃO EM ENFERMAGEMCOREN ATIVO ESTADO DO PICURSO DE APH OU DISPONIBILIDADE PARA REALIZAR Informações adicionaisSalário: R$2200,0Vale"
     ],
-    remuneracao_beneficios: [
-      'Bolsa Salarial Jovem Aprendiz',
-      'Vale Transporte',
-      'Seguro de Vida',
-      'Capacitação profissional com certificado e possibilidade real de efetivação'
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
     ],
-    modalidade: 'Presencial',
-    contrato: 'Estágio',
-    nivel: 'Sem Experiência',
-    link_candidatura_gupy: 'https://cencosudbrasil.gupy.io/jobs/7475120?jobBoardSource=gupy_portal',
-    data_publicacao: '16/09/2026'
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Administração",
+      "Presencial",
+      "CLT",
+      "Atendimento"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774199640000,
+    "applicationUrl": "https://medmais.gupy.io/job/eyJqb2JJZCI6MTI1NjA0MDgsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 103,
+    "source": "Gupy",
+    "sourceUrl": "https://medmais.gupy.io/job/eyJqb2JJZCI6MTI1NjA0MDgsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
   },
   {
-    cargo: 'Auxiliar Administrativo de Atendimento',
-    empresa: 'Fecomércio / Senac Piauí',
-    area: 'Administrativo / Secretaria Escolar',
-    requisitos: [
-      'Ensino Médio completo ou Superior cursando em Administração/Secretariado',
-      'Experiência em rotinas de secretaria, atendimento ao público, conferência de matrículas e documentações',
-      'Domínio básico/intermediário do Pacote Office',
-      'Organização de arquivos e emissão de declarações'
+    "id": "gupy-12558474",
+    "title": "Ass. de Atendimento  | Teresina - PI",
+    "company": "Aegea Saneamento",
+    "companyInitials": "AS",
+    "companyColor": "from-teal-800 via-emerald-800 to-green-950",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "A AegeaCriada em 2010, a Aegea é líder no setor privado de saneamento básico no Brasil. Em cada município onde atua, leva mais saúde e qualidade de vida para a população, respeitando sempre o meio ambiente e a cultura local.Programa Respeito dá o TomO programa nasceu com a meta d...",
+    "requirements": [
+      "Requisitos e qualificaçõesEnsino Médio completo",
+      "Conhecimento básico/intermediário do Pacote Office",
+      "Experiência com atendimento ao cliente"
     ],
-    remuneracao_beneficios: [
-      'R$ 2.150,00 (CLT)',
-      'Vale Transporte',
-      'Vale Alimentação (R$ 650,00)',
-      'Plano de Saúde e Odontológico',
-      'Bolsas de estudo integrais em cursos de formação continuada'
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
     ],
-    modalidade: 'Presencial',
-    contrato: 'CLT',
-    nivel: 'Júnior',
-    link_candidatura_gupy: 'https://senac.gupy.io/jobs/7473980?jobBoardSource=gupy_portal',
-    data_publicacao: '16/09/2026'
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Aegea",
+      "Presencial",
+      "CLT",
+      "Atendimento",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774199580000,
+    "applicationUrl": "https://aegea.gupy.io/job/eyJqb2JJZCI6MTI1NTg0NzQsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 106,
+    "source": "Gupy",
+    "sourceUrl": "https://aegea.gupy.io/job/eyJqb2JJZCI6MTI1NTg0NzQsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
   },
   {
-    cargo: 'Analista de Suporte de TI / Redes',
-    empresa: 'Grupo Claudino',
-    area: 'Tecnologia da Informação',
-    requisitos: [
-      'Superior em Redes de Computadores, Ciência da Computação ou Sistemas de Informação',
-      'Experiência em suporte a sistemas operacionais Windows/Linux, manutenção de redes TCP/IP, VLANs e roteamento',
-      'Atendimento a chamados N1/N2 em ambiente corporativo de grande porte'
+    "id": "gupy-12558690",
+    "title": "TÉCNICO DE MANUTENÇÃO ( CABRAL - TERESINA/PI)",
+    "company": "McDonald's Restaurante",
+    "companyInitials": "MR",
+    "companyColor": "from-purple-700 via-indigo-700 to-purple-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Tech & Dev",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Prazer, somos a Arcos Dorados, maior franquia independente do McDonald’s no mundo. Vamos nos conhecer?A gente tem certeza que o McDonald’s você já conhece. Não é à toa. Somos uma das marcas mais amadas do planeta! Agora, você sabia que quem está por trás dessa operação aqui no Br...",
+    "requirements": [
+      "🤩Somos reconhecidos como uma das melhores empresas para se trabalhar na América Latina e um dos maiores empregadores de jovens do Brasil – mais de 75% das nossas pessoas têm menos de 25 anos e estão em sua primeira experiência profissional",
+      "Requisitos e qualificaçõesIngrediente que não pode faltar 🍔Ensino médio completo",
+      "Conhecimentos Específicos: Curso de manutenção elétrica industrial, comandos elétricos e/ou refrigeração",
+      "😍Faz questão de tornar as coisas mais fáceis para as pessoasAdora gerar sorrisos 😀Ama contato pessoal e sempre busca oportunidades para interação 🗨Entende que as necessidades das pessoas são mais importantes do que qualquer tarefaÉ comprometido com o bom tratamento entre as pessoas e coloca o respeito acima de tudoCelebra as diferenças e acredita que cada cliente e cada experiência são únicos!Informações adicionaisBenefícios que deixam tudo ainda mais gostoso 😋Assistência Médica"
     ],
-    remuneracao_beneficios: [
-      'R$ 3.200,00 (CLT)',
-      'Plano de Saúde',
-      'Desconto corporativo exclusivo em lojas do grupo (Armazém Paraíba)',
-      'Refeitório no local',
-      'Vale Transporte'
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
     ],
-    modalidade: 'Presencial',
-    contrato: 'CLT',
-    nivel: 'Pleno',
-    link_candidatura_gupy: 'https://grupoclaudino.gupy.io/jobs/7472140?jobBoardSource=gupy_portal',
-    data_publicacao: '16/09/2026'
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "McDonald's",
+      "Presencial",
+      "CLT",
+      "Tech & Dev",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774199520000,
+    "applicationUrl": "https://restaurantemc.gupy.io/job/eyJqb2JJZCI6MTI1NTg2OTAsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 109,
+    "source": "Gupy",
+    "sourceUrl": "https://restaurantemc.gupy.io/job/eyJqb2JJZCI6MTI1NTg2OTAsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
   },
   {
-    cargo: 'Farmacêutico(a) Substituto',
-    empresa: 'Farmácias Pague Menos Teresina',
-    area: 'Saúde / Farmácia',
-    requisitos: [
-      'Graduação completa em Farmácia com CRF-PI ativo e regular',
-      'Disponibilidade para escala de revezamento e atendimento ao balcão',
-      'Conhecimento em dispensação de medicamentos controlados (SNGPC)',
-      'Atenção farmacêutica, aplicação de injetáveis e testes rápidos'
+    "id": "gupy-12525547",
+    "title": "Supervisor de Vendas - Shopping Rio Poty",
+    "company": "Centauro Talentos",
+    "companyInitials": "CT",
+    "companyColor": "from-blue-700 via-indigo-700 to-slate-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Sênior",
+    "category": "Vendas & Mkt",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "DESCRIÇÃO DA VAGA 🔎📣Que tal entrar para o nosso #TimedeCampeões?Aqui é lugar de gente que tem sede de vitória, apaixonado por esporte, acredita no trabalho em equipe e está disposto a correr junto com os nossos clientes.Tem habilidade para liderar e inspirar? Esta vaga é para voc...",
+    "requirements": [
+      "Tem habilidade para liderar e inspirar? Esta vaga é para você! Você vai treinar e engajar a equipe, garantir um atendimento de excelência e cuidar da gestão do estoque, levando nosso time a marcar golaços todos os dias!Responsabilidades e atribuiçõesRESPONSABILIDADES E ATRIBUIÇÕESVocê será responsável por liderar e garantir a execução dos processos de vendas do setor de calçados, assegurando a excelência no atendimento ao cliente conforme nosso roteiro de atendimento",
+      "Requisitos e qualificaçõesREQUISITOS E QUALIFICAÇÕES ✅ ✅Pra jogar bonito você precisa ter:Ensino Superior em andamento completoExperiência na área de vendasConhecimento e vivência com gestão de times, visando engajamento e motivação"
     ],
-    remuneracao_beneficios: [
-      'Piso Salarial do Farmacêutico CRF-PI (R$ 4.200,00) + Comissões e Metas',
-      'Plano de Saúde e Odontológico Bradesco',
-      'Vale Transporte',
-      'Vale Refeição',
-      'Desconto de até 50% em medicamentos nas farmácias da rede'
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
     ],
-    modalidade: 'Presencial',
-    contrato: 'CLT',
-    nivel: 'Júnior',
-    link_candidatura_gupy: 'https://paguemenos.gupy.io/jobs/7468900?jobBoardSource=gupy_portal',
-    data_publicacao: '15/09/2026'
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Centauro",
+      "Presencial",
+      "CLT",
+      "Vendas & Mkt"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774199460000,
+    "applicationUrl": "https://centaurotalentos.gupy.io/job/eyJqb2JJZCI6MTI1MjU1NDcsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 112,
+    "source": "Gupy",
+    "sourceUrl": "https://centaurotalentos.gupy.io/job/eyJqb2JJZCI6MTI1MjU1NDcsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
   },
   {
-    cargo: 'Supervisor(a) de Operações de Varejo / Açougue',
-    empresa: 'Grupo Mateus (Mix Atacarejo Teresina)',
-    area: 'Varejo e Operações',
-    requisitos: [
-      'Ensino Médio completo ou Superior em Gestão Comercial/Administração',
-      'Experiência sólida na gestão de setores de perecíveis/açougue em atacados ou supermercados',
-      'Liderança de equipe, controle de perdas, validade e cumprimento das normas da ANVISA',
-      'Disponibilidade de horário para escala 6x1'
+    "id": "gupy-12147171",
+    "title": "Recepcionista Banco de Sangue Teresina - Vaga temporária para Cobertura de licença maternidade",
+    "company": "Grupo GSH",
+    "companyInitials": "GG",
+    "companyColor": "from-emerald-700 via-teal-700 to-emerald-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Provemos soluções em hemoterapia de alta complexidade com foco na segurança transfusional dos pacientes e no atendimento diferenciado junto aos nossos clientes, garantindo o apoio necessário para atuarem com qualidade e eficiência.Possuímos a maior rede de médicos hematologistas ...",
+    "requirements": [
+      "São mais de 40 anos de experiência e credibilidade em hemoterapia de alta complexidade, fazendo do Grupo GSH seu parceiro de maior confiança para suportar o aumento na demanda dos pacientes oncológicos, de transplantes e que necessitam de procedimentos especiais em hemoterapia",
+      "Responsabilidades e atribuiçõesSer o facilitador do processo de recepção, cadastro e triagem apoiando a recepção, triagem e coleta para o bom andamento do fluxo e garantir excelente experiência aos doadores",
+      "Requisitos e qualificaçõesEnsino Médio Completo",
+      "Experiência mínima de 1 ano como recepcionista, concierge ou acolhimento do cliente"
     ],
-    remuneracao_beneficios: [
-      'R$ 3.800,00 (CLT) + Bônus por metas atingidas',
-      'Refeição no local',
-      'Vale Transporte',
-      'Plano de Saúde e Odontológico',
-      'Clube de vantagens e descontos em compras no Mateus'
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
     ],
-    modalidade: 'Presencial',
-    contrato: 'CLT',
-    nivel: 'Sênior',
-    link_candidatura_gupy: 'https://grupomateus.gupy.io/jobs/7465320?jobBoardSource=gupy_portal',
-    data_publicacao: '15/09/2026'
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Grupo",
+      "Presencial",
+      "CLT",
+      "Atendimento",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774199400000,
+    "applicationUrl": "https://grupogsh.gupy.io/job/eyJqb2JJZCI6MTIxNDcxNzEsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 115,
+    "source": "Gupy",
+    "sourceUrl": "https://grupogsh.gupy.io/job/eyJqb2JJZCI6MTIxNDcxNzEsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12555030",
+    "title": "Analista de Meio Ambiente Jr",
+    "company": "Aegea Saneamento",
+    "companyInitials": "AS",
+    "companyColor": "from-rose-600 via-pink-700 to-purple-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Pleno",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "A AegeaCriada em 2010, a Aegea é líder no setor privado de saneamento básico no Brasil. Em cada município onde atua, leva mais saúde e qualidade de vida para a população, respeitando sempre o meio ambiente e a cultura local.Programa Respeito dá o TomO programa nasceu com a meta d...",
+    "requirements": [
+      "Requisitos e qualificações Ensino Superior cursando ou em Engenharia Ambiental, Engenharia Sanitária e Ambiental, Gestão Ambiental, Ciências Biológicas ou áreas correlatas",
+      "Conhecimento básico em legislação e licenciamento ambiental",
+      "Conhecimento do Pacote Office",
+      "Disponibilidade para viagens"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Aegea",
+      "Presencial",
+      "CLT",
+      "Atendimento",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774199340000,
+    "applicationUrl": "https://aegea.gupy.io/job/eyJqb2JJZCI6MTI1NTUwMzAsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 118,
+    "source": "Gupy",
+    "sourceUrl": "https://aegea.gupy.io/job/eyJqb2JJZCI6MTI1NTUwMzAsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12554703",
+    "title": "Analista de Recursos Humanos JR",
+    "company": "GrupoSC Distribuidora de Medicamentos",
+    "companyInitials": "GD",
+    "companyColor": "from-amber-600 via-orange-700 to-red-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Pleno",
+    "category": "Tech & Dev",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Buscamos pessoas que nos ajudem a cumprir o nosso propósito de levar mais saúde para mais pessoas. Se você é um profissional pró ativo, flexível a mudanças e disposto a se comprometer com a busca pela melhoria contínua, junte-se a nós!﻿Todas as nossas vagas estão abertas para pes...",
+    "requirements": [
+      "Acompanhamento do período de experiência",
+      "Requisitos e qualificaçõesEnsino superior completo ou andamento em Psicologia, Administração ou Recursos Humanos",
+      "Informações adicionaisBenefícios: PDS (Prêmio por Desempenho Superior)"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "GrupoSC",
+      "Presencial",
+      "CLT",
+      "Tech & Dev"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774199280000,
+    "applicationUrl": "https://gruposc.gupy.io/job/eyJqb2JJZCI6MTI1NTQ3MDMsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 121,
+    "source": "Gupy",
+    "sourceUrl": "https://gruposc.gupy.io/job/eyJqb2JJZCI6MTI1NTQ3MDMsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12537363",
+    "title": "ATENDENTE DE LOCACAO",
+    "company": "Movida Aluguel de Carros",
+    "companyInitials": "MA",
+    "companyColor": "from-cyan-600 via-blue-700 to-indigo-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Vendas & Mkt",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "A Movida é uma empresa de soluções inovadoras em mobilidade urbana e modelo de negócios com forte direcionamento para desenvolvimento socioambiental. Desde 2006 no mercado, conta hoje com a frota mais nova do Brasil e dispõe de lojas nas principais cidades e aeroportos do país. A...",
+    "requirements": [
+      "Conferir e acompanhar as reservas no sistema, de modo a organizar a disponibilidade de veículos com finalidade de reduzir a ociosidade da frota",
+      "Abrir ordens de serviços necessárias à disponibilidade de veículos para atendimento e funcionamento da loja",
+      "Auxiliar na conferência dos veículos da frota, apontando disponibilidade/indisponibilidade e apoiar nos processos de envio para manutenção",
+      "Requisitos e qualificaçõesEnsino Médio Completo"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Movida",
+      "Presencial",
+      "CLT",
+      "Vendas & Mkt",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774199220000,
+    "applicationUrl": "https://movida.gupy.io/job/eyJqb2JJZCI6MTI1MzczNjMsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 124,
+    "source": "Gupy",
+    "sourceUrl": "https://movida.gupy.io/job/eyJqb2JJZCI6MTI1MzczNjMsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12549019",
+    "title": "Coordenador(a) de Operações Logísticas-TERESINA-PI",
+    "company": "Kuehne+Nagel Brasil",
+    "companyInitials": "KB",
+    "companyColor": "from-yellow-600 via-amber-700 to-orange-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Sênior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Você vai coordenar equipes e fluxos logísticos de uma operação em ritmo de e-commerce, conectando planejamento, execução e cliente. Seu dia é feito de prioridade, dado e decisão: dimensionar o time, destravar o gargalo e sustentar a melhoria depois que ela acontece.⚓Na Kuehne+Nag...",
+    "requirements": [
+      "Ensino superior completo ou em andamento: Administração, Logística, Engenharia ou áreas correlatas",
+      "Experiência em gestão de operações logísticas e de equipes",
+      "Conhecimento em sistemas de gestão (WMS/TMS)",
+      "Disponibilidade para trabalhar em turnosSerá um diferencial"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Kuehne+Nagel",
+      "Presencial",
+      "CLT",
+      "Atendimento",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774199160000,
+    "applicationUrl": "https://kuehne-nagel.gupy.io/job/eyJqb2JJZCI6MTI1NDkwMTksInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 127,
+    "source": "Gupy",
+    "sourceUrl": "https://kuehne-nagel.gupy.io/job/eyJqb2JJZCI6MTI1NDkwMTksInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12547950",
+    "title": "ESTAGIÁRIO(A) DE SOCIAL MÍDIA - Teresina/PI",
+    "company": "REDE CACIQUE",
+    "companyInitials": "RC",
+    "companyColor": "from-teal-800 via-emerald-800 to-green-950",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "Estágio",
+    "experienceLevel": "Júnior",
+    "category": "Administrativo",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Estamos em busca de um(a) Estagiário(a) de Social Mídia para integrar nossa equipe!Se você é criativo(a), gosta de redes sociais, tem interesse por marketing digital e deseja desenvolver suas habilidades na área, essa oportunidade é para você.Se você possui essas habilidades e in...",
+    "requirements": [
+      "Estamos em busca de um(a) Estagiário(a) de Social Mídia para integrar nossa equipe!Se você é criativo(a), gosta de redes sociais, tem interesse por marketing digital e deseja desenvolver suas habilidades na área, essa oportunidade é para você",
+      "Se você possui essas habilidades e interesse em atuar na área de marketing, venha fazer parte do nosso time! Responsabilidades e atribuições",
+      "Conhecimento em Canva, Photoshop, Illustrator, entre outras ferramentas",
+      "Desejável possuir transporte próprio e CNH"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "REDE",
+      "Presencial",
+      "Estágio",
+      "Administrativo",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774199100000,
+    "applicationUrl": "https://redecacique.gupy.io/job/eyJqb2JJZCI6MTI1NDc5NTAsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 130,
+    "source": "Gupy",
+    "sourceUrl": "https://redecacique.gupy.io/job/eyJqb2JJZCI6MTI1NDc5NTAsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12547569",
+    "title": "Líder",
+    "company": "Aegea Saneamento",
+    "companyInitials": "AS",
+    "companyColor": "from-purple-700 via-indigo-700 to-purple-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "A AegeaCriada em 2010, a Aegea é líder no setor privado de saneamento básico no Brasil. Em cada município onde atua, leva mais saúde e qualidade de vida para a população, respeitando sempre o meio ambiente e a cultura local.Programa Respeito dá o TomO programa nasceu com a meta d...",
+    "requirements": [
+      "Garantir o fluxo adequado de informações entre o COI(Centro de Operações Integradas), regionais e áreas de apoio Requisitos e qualificaçõesEnsino Médio Completo",
+      "Vivencia em operações de saneamento, com conhecimento dos processos de produção, distribuição e manutenção, principalmente na operação das Unidades de Teresina, Timon e demais localidades do Piauí, com conhecimento das particularidades operacionais, criticidades e dinâmica regional"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Aegea",
+      "Presencial",
+      "CLT",
+      "Atendimento",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774199040000,
+    "applicationUrl": "https://aegea.gupy.io/job/eyJqb2JJZCI6MTI1NDc1NjksInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 133,
+    "source": "Gupy",
+    "sourceUrl": "https://aegea.gupy.io/job/eyJqb2JJZCI6MTI1NDc1NjksInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12444316",
+    "title": "Auxiliar de Almoxarifado",
+    "company": "Hospital São Marcos",
+    "companyInitials": "HS",
+    "companyColor": "from-blue-700 via-indigo-700 to-slate-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Administrativo",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Apoiar e contribuir com as atividades de recebimento, estocagem, distribuição e controle de produtos garantindo estoque mínimo e qualidade dos produtos para abastecer todo o hospital.Responsabilidades e atribuiçõesAntecipar-se a possíveis problemas como manter estoque suficiente ...",
+    "requirements": [
+      "Requisitos e qualificaçõesEnsino Médio Completo",
+      "Conhecimentos básicos em informática"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Hospital",
+      "Presencial",
+      "CLT",
+      "Administrativo"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198980000,
+    "applicationUrl": "https://hospitalsaomarcos.gupy.io/job/eyJqb2JJZCI6MTI0NDQzMTYsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 136,
+    "source": "Gupy",
+    "sourceUrl": "https://hospitalsaomarcos.gupy.io/job/eyJqb2JJZCI6MTI0NDQzMTYsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12502182",
+    "title": "Auxiliar de Farmácia (vaga temporária)",
+    "company": "Hospital São Marcos",
+    "companyInitials": "HS",
+    "companyColor": "from-emerald-700 via-teal-700 to-emerald-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Vendas & Mkt",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "O Auxiliar de Farmácia é o profissional responsável por auxiliar no atendimento e na organização dos medicamentos por setor, repõe medicamentos e materiais, interpreta prescrições médicas, realizar tarefas específicas de desenvolvimento, produção, manipulação, dispensação, contro...",
+    "requirements": [
+      "Requisitos e qualificaçõesEnsino médio completo (obrigatório)",
+      "Curso técnico em farmácia, em andamento ou conluído (desejável)"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Hospital",
+      "Presencial",
+      "CLT",
+      "Vendas & Mkt",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198920000,
+    "applicationUrl": "https://hospitalsaomarcos.gupy.io/job/eyJqb2JJZCI6MTI1MDIxODIsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 139,
+    "source": "Gupy",
+    "sourceUrl": "https://hospitalsaomarcos.gupy.io/job/eyJqb2JJZCI6MTI1MDIxODIsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12511435",
+    "title": "AUX. DE LIMPEZA - HIGIENE",
+    "company": "Hospital São Marcos",
+    "companyInitials": "HS",
+    "companyColor": "from-rose-600 via-pink-700 to-purple-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Prestar serviço de Higiene com qualidade em todas as áreas da instituição, de forma segura, garantindo agilidade e eficiência do serviço, proporcionando uma boa experiencia dos nossos clientes internos externos.Responsabilidades e atribuiçõesRealizar limpeza concorrente ou limpez...",
+    "requirements": [
+      "Requisitos e qualificaçõesEnsino médio completo (obrigatório)",
+      "Experiência com limpeza hospitalar"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Hospital",
+      "Presencial",
+      "CLT",
+      "Atendimento",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198860000,
+    "applicationUrl": "https://hospitalsaomarcos.gupy.io/job/eyJqb2JJZCI6MTI1MTE0MzUsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 142,
+    "source": "Gupy",
+    "sourceUrl": "https://hospitalsaomarcos.gupy.io/job/eyJqb2JJZCI6MTI1MTE0MzUsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12546021",
+    "title": "Advogado(a) Cível - PLENO - UNIDADE TERESINA",
+    "company": "Décio Freire Advogados",
+    "companyInitials": "DF",
+    "companyColor": "from-amber-600 via-orange-700 to-red-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Pleno",
+    "category": "Administrativo",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Nossa missão é buscar de forma obstinada a segurança jurídica de nossos clientes, com dedicação absoluta, alta estratégia e conhecimento jurídico, sempre pautado na lealdade ética. Com forte atuação no ramo empresarial, nosso escritório atende 21 matérias do direito, contando com...",
+    "requirements": [
+      "Nossa missão é buscar de forma obstinada a segurança jurídica de nossos clientes, com dedicação absoluta, alta estratégia e conhecimento jurídico, sempre pautado na lealdade ética",
+      "Experiência comprovada de no mínimo 3 (três) na área de contratos e editais",
+      "Habilidade em identificar e mitigar riscos contratuais",
+      "Experiência na área de Direito Cível será considerada um diferencial"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Décio",
+      "Presencial",
+      "CLT",
+      "Administrativo",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198800000,
+    "applicationUrl": "https://deciofreireadv.gupy.io/job/eyJqb2JJZCI6MTI1NDYwMjEsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 145,
+    "source": "Gupy",
+    "sourceUrl": "https://deciofreireadv.gupy.io/job/eyJqb2JJZCI6MTI1NDYwMjEsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12545816",
+    "title": "Operador(a) de Loja",
+    "company": "Assaí Atacadista",
+    "companyInitials": "AA",
+    "companyColor": "from-cyan-600 via-blue-700 to-indigo-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Faça parte do crescimento do Assaí! Com lojas espalhadas por todo Brasil com um time diverso de + 80 mil colaboradores, vivemos com paixão para atender os(as) nossos(as) clientes. Somos reconhecidos como um excelente lugar para se trabalhar, proporcionando um ambiente acolhedor, ...",
+    "requirements": [
+      "Requisitos e qualificaçõesFormação acadêmica mínima: Ensino Médio Completo",
+      "Experiência: não é necessário experiência na funçãoInformações adicionaisBenefícios:🩺 Assistência Médica e Odontológica💳 Vale"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Assaí",
+      "Presencial",
+      "CLT",
+      "Atendimento",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198740000,
+    "applicationUrl": "https://assai.gupy.io/job/eyJqb2JJZCI6MTI1NDU4MTYsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 148,
+    "source": "Gupy",
+    "sourceUrl": "https://assai.gupy.io/job/eyJqb2JJZCI6MTI1NDU4MTYsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12545158",
+    "title": "FONOAUDIOLOGA (O) PJ / TERESINA - PI",
+    "company": "Pagina dedicada à cargos especializados em TEA e Medicina preventiva",
+    "companyInitials": "PD",
+    "companyColor": "from-yellow-600 via-amber-700 to-orange-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "PJ",
+    "experienceLevel": "Júnior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "A hora de fazer parte de um time comprometido, acolhedor e que leva saúde para milhões de pessoas, é agora! Estamos na busca de profissionais para compor a nossa equipe! Se você é comprometido(a) e apaixonado(a) por novos desafios, aqui é o seu lugar! Faça seu cadastro e envie se...",
+    "requirements": [
+      "A hora de fazer parte de um time comprometido, acolhedor e que leva saúde para milhões de pessoas, é agora! Estamos na busca de profissionais para compor a nossa equipe! Se você é comprometido(a) e apaixonado(a) por novos desafios, aqui é o seu lugar! Faça seu cadastro e envie seu currículo! Responsabilidades e atribuições Atendimento e intervenções individuais ou com equipe multi para desenvolver a fala, aprimorar a compreensão, a expressão e as habilidades sociais, além de intervir em aspectos como a motricidade orofacial, deglutição e audição de crianças e adolescentes considerando suas necessidades individuais, preferências, restrições e desafios",
+      "Requisitos e qualificaçõesObrigatório: Superior completo em Fonoaudiologia Registro Ativo no Conselho",
+      "Desejável capacitações e especializações serão diferencial",
+      "Foco em DISFAGIA Experiência com crianças e adultos"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Pagina",
+      "Presencial",
+      "PJ",
+      "Atendimento",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198680000,
+    "applicationUrl": "https://hapvidanditea.gupy.io/job/eyJqb2JJZCI6MTI1NDUxNTgsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 151,
+    "source": "Gupy",
+    "sourceUrl": "https://hapvidanditea.gupy.io/job/eyJqb2JJZCI6MTI1NDUxNTgsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12545084",
+    "title": "Atendente de Gelateria - Teresina/PI",
+    "company": "San Paolo Gelato e Café",
+    "companyInitials": "SP",
+    "companyColor": "from-teal-800 via-emerald-800 to-green-950",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Vendas & Mkt",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Já imaginou trabalhar em uma marca 100% brasileira, feita por gente que acredita no sabor das ideias e no poder das conexões?A San Paolo nasceu em Fortaleza e voou longe. Hoje, somos mais de 600 bigodinhos em +70 lojas próprias, de Norte a Sul do Brasil, espalhando afeto e inovaç...",
+    "requirements": [
+      "Requisitos e qualificaçõesEnsino Médio Completo",
+      "Disponibilidade para trabalhar em escala 05x02",
+      "Conhecimento em operação de caixa"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "San",
+      "Presencial",
+      "CLT",
+      "Vendas & Mkt"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198620000,
+    "applicationUrl": "https://sanpaologelato.gupy.io/job/eyJqb2JJZCI6MTI1NDUwODQsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 154,
+    "source": "Gupy",
+    "sourceUrl": "https://sanpaologelato.gupy.io/job/eyJqb2JJZCI6MTI1NDUwODQsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12469022",
+    "title": "Jovem Aprendiz",
+    "company": "Baterias Moura",
+    "companyInitials": "BM",
+    "companyColor": "from-purple-700 via-indigo-700 to-purple-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Sem Experiência",
+    "category": "Tech & Dev",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Há mais de 65 anos a Moura contribuí com novas ideias e tecnologias para termos as melhores soluções em energia e mover o futuro.Aqui, respeitamos e incentivamos a diversidade, acreditando nas pessoas e em sua capacidade de realização e desenvolvimento.Se você se identifica com u...",
+    "requirements": [
+      "Requisitos e qualificaçõesO QUE BUSCAMOS?Formação:Ensino Médio Completo ou Ensino Superior cursando",
+      "Ter disponibilidade para trabalhar 4 horas diárias",
+      "Ter disponibilidade de 2 anos para o programa"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Baterias",
+      "Presencial",
+      "CLT",
+      "Tech & Dev"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198560000,
+    "applicationUrl": "https://redemoura.gupy.io/job/eyJqb2JJZCI6MTI0NjkwMjIsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 157,
+    "source": "Gupy",
+    "sourceUrl": "https://redemoura.gupy.io/job/eyJqb2JJZCI6MTI0NjkwMjIsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12537803",
+    "title": "Operador(a) de Caixa",
+    "company": "Assaí Atacadista",
+    "companyInitials": "AA",
+    "companyColor": "from-blue-700 via-indigo-700 to-slate-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Vendas & Mkt",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Faça parte do crescimento do Assaí! Com lojas espalhadas por todo Brasil com um time diverso de + 80 mil colaboradores, vivemos com paixão para atender os(as) nossos(as) clientes. Somos reconhecidos como um excelente lugar para se trabalhar, proporcionando um ambiente acolhedor, ...",
+    "requirements": [
+      "Requisitos e qualificaçõesFormação acadêmica mínima: Ensino Médio Completo",
+      "Experiência: desejável que tenha experiência anterior com:Operações de caixa"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Assaí",
+      "Presencial",
+      "CLT",
+      "Vendas & Mkt"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198500000,
+    "applicationUrl": "https://assai.gupy.io/job/eyJqb2JJZCI6MTI1Mzc4MDMsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 160,
+    "source": "Gupy",
+    "sourceUrl": "https://assai.gupy.io/job/eyJqb2JJZCI6MTI1Mzc4MDMsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12537770",
+    "title": "CONSULTOR COMERCIAL INTERNO - CACIQUE LUBRIFICANTES - TERESINA/PI",
+    "company": "REDE CACIQUE",
+    "companyInitials": "RC",
+    "companyColor": "from-emerald-700 via-teal-700 to-emerald-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "Estágio",
+    "experienceLevel": "Júnior",
+    "category": "Vendas & Mkt",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Estamos à procura de um Consultor de Vendas Interno para prospectar e atender, orientar e acompanhar os nossos clientes, indagando-os acerca de suas necessidades para prestar-lhes os serviços adequados.Possui habilidades de comunicação, negociação e conhecimento em atendimento e ...",
+    "requirements": [
+      "Possui habilidades de comunicação, negociação e conhecimento em atendimento e vendas? Você é o nosso candidato ideal",
+      "Ensino médio completo",
+      "Experiência anterior com vendas e negociação",
+      "Conhecimento básico em informática"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "REDE",
+      "Presencial",
+      "Estágio",
+      "Vendas & Mkt",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198440000,
+    "applicationUrl": "https://redecacique.gupy.io/job/eyJqb2JJZCI6MTI1Mzc3NzAsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 163,
+    "source": "Gupy",
+    "sourceUrl": "https://redecacique.gupy.io/job/eyJqb2JJZCI6MTI1Mzc3NzAsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-10353262",
+    "title": "Auxiliar de Produção - Polo industrial Zona sul de Teresina",
+    "company": "Apus Nutricosméticos",
+    "companyInitials": "AN",
+    "companyColor": "from-rose-600 via-pink-700 to-purple-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Administrativo",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "O cargo de Auxiliar de Produção é uma oportunidade para se juntar a uma equipe comprometida em atender as necessidades e expectativas dos nossos clientes. Como parte da equipe, valorizamos a excelência no serviço ao cliente e o trabalho em equipe, oferecendo um ambiente de trabal...",
+    "requirements": [
+      "O auxiliar de Produção terá a chance de crescer profissionalmente, adquirir conhecimentos em farmacologia e contribuir para a saúde, bem",
+      "Requisitos e qualificaçõesEnsino médio completo",
+      "Conhecimento de informáticaConhecimento em matemática básica"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Apus",
+      "Presencial",
+      "CLT",
+      "Administrativo"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198380000,
+    "applicationUrl": "https://apusnutricosmeticos.gupy.io/job/eyJqb2JJZCI6MTAzNTMyNjIsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 166,
+    "source": "Gupy",
+    "sourceUrl": "https://apusnutricosmeticos.gupy.io/job/eyJqb2JJZCI6MTAzNTMyNjIsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12537649",
+    "title": "Estágio em T.I",
+    "company": "Botica Farmacia de Manipulação",
+    "companyInitials": "BF",
+    "companyColor": "from-amber-600 via-orange-700 to-red-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "Estágio",
+    "experienceLevel": "Sem Experiência",
+    "category": "Administrativo",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "O cargo de estagiário é uma oportunidade para se juntar a uma equipe comprometida. Valorizamos a excelência no serviço ao cliente e o trabalho em equipe, oferecendo um ambiente de trabalho colaborativo e acolhedor. O estagiário terá a chance de crescer profissionalmente, adquirir...",
+    "requirements": [
+      "O estagiário terá a chance de crescer profissionalmente, adquirir conhecimentos e contribuir para a melhoria contínua dos nossos processos",
+      "Requisitos e qualificações Cursando Ensino Superior ou Técnico em Análise e Desenvolvimento de Sistemas, Ciência da Computação OU áreas correlatas"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Botica",
+      "Presencial",
+      "Estágio",
+      "Administrativo",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198320000,
+    "applicationUrl": "https://boticafarmacias.gupy.io/job/eyJqb2JJZCI6MTI1Mzc2NDksInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 169,
+    "source": "Gupy",
+    "sourceUrl": "https://boticafarmacias.gupy.io/job/eyJqb2JJZCI6MTI1Mzc2NDksInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12535367",
+    "title": "LE BISCUIT | OPERADOR DE LOJA | TERESINA RUA - CENTRO (EXTRA NATAL)",
+    "company": "Le biscuit",
+    "companyInitials": "LB",
+    "companyColor": "from-cyan-600 via-blue-700 to-indigo-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Vendas & Mkt",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Como é trabalhar no GRUPO CVLB?Somos uma empresa inclusiva e diversa, cheia de oportunidades de crescimento, clima alegre e descontraído.Para que tudo dê certo nas lojas, um time enorme trabalha na administração e no centro de distribuição. Isso significa que há muito espaço para...",
+    "requirements": [
+      "E, o principal: proporcionar a melhor experiência de compra, encantando e fidelizando cada vez mais nossos clientes!Requisitos e qualificações📝 Para conquistar um lugar no time de talentos da Le biscuit, você precisa:",
+      "Ensino médio completo",
+      "Será considerado como diferencial ter ensino superior em andamento ou completo (aceitamos qualquer área de formação)",
+      "Desejável experiência em varejo como: operador de loja, atendente, caixa, repositor, vendedor, promotor, expositor e/ou operador merchandising"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Le",
+      "Presencial",
+      "CLT",
+      "Vendas & Mkt",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198260000,
+    "applicationUrl": "https://lebiscuit.gupy.io/job/eyJqb2JJZCI6MTI1MzUzNjcsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 172,
+    "source": "Gupy",
+    "sourceUrl": "https://lebiscuit.gupy.io/job/eyJqb2JJZCI6MTI1MzUzNjcsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12532656",
+    "title": "ATENDENTE DE RESTAURANTE ( MORADA DO SOL - TERESINA/PI)",
+    "company": "McDonald's Restaurante",
+    "companyInitials": "MR",
+    "companyColor": "from-yellow-600 via-amber-700 to-orange-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "#A gente vai amar muito se você... 😍🍟 Faz questão de tornar as coisas mais fáceis para as pessoas e adora gerar sorrisos 🍟 Ama contato pessoal e sempre busca oportunidades para interação 🗨🍟 Entende que as necessidades das pessoas são mais importantes do que qualquer tarefa🍟 É com...",
+    "requirements": [
+      "😍🍟 Faz questão de tornar as coisas mais fáceis para as pessoas e adora gerar sorrisos 🍟 Ama contato pessoal e sempre busca oportunidades para interação 🗨🍟 Entende que as necessidades das pessoas são mais importantes do que qualquer tarefa🍟 É comprometido com o bom tratamento entre as pessoas e coloca o respeito acima de tudo🍟 Celebra as diferenças e acredita que cada cliente e cada experiência são únicos!Responsabilidades e atribuiçõesComo será o seu dia a dia (spoiler: gerar muitos sorrisos faz parte do pacote)!A gente contará com você para as atividades operacionais do restaurante: preparar e montar os pedidos",
+      "Requisitos e qualificaçõesIngrediente que não pode faltar 🍔Ensino médio cursando ou completo",
+      "Pronto para uma experiência tão inesquecível quanto um Big Mac? Se inscreva! ⌨"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "McDonald's",
+      "Presencial",
+      "CLT",
+      "Atendimento",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198200000,
+    "applicationUrl": "https://restaurantemc.gupy.io/job/eyJqb2JJZCI6MTI1MzI2NTYsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 175,
+    "source": "Gupy",
+    "sourceUrl": "https://restaurantemc.gupy.io/job/eyJqb2JJZCI6MTI1MzI2NTYsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12502345",
+    "title": "JOVEM APRENDIZ - TI",
+    "company": "Grupo CEV",
+    "companyInitials": "GC",
+    "companyColor": "from-teal-800 via-emerald-800 to-green-950",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Sem Experiência",
+    "category": "Tech & Dev",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Estamos buscando profissionais qualificados para se unir ao Grupo CEV, um líder em educação com 20 anos de sucesso. Valorizamos candidatos que compartilhem nossos princípios de excelência, respeito e inovação. Se você tem novas ideias e habilidades para contribuir, queremos conhe...",
+    "requirements": [
+      "Se você tem novas ideias e habilidades para contribuir, queremos conhecê",
+      "Requisitos e qualificaçõesEnsino superior ou técnico em andamento em: Análise e Desenvolvimento de Sistema, Informática ou áreas correlatas",
+      "Conhecimento básico em: Montagem e Manutenção de computadores, Sistemas Operacionais, Impressora, Dispositivos Apple e Android, Projetores etc"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Grupo",
+      "Presencial",
+      "CLT",
+      "Tech & Dev",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198140000,
+    "applicationUrl": "https://grupocev.gupy.io/job/eyJqb2JJZCI6MTI1MDIzNDUsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 178,
+    "source": "Gupy",
+    "sourceUrl": "https://grupocev.gupy.io/job/eyJqb2JJZCI6MTI1MDIzNDUsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12516382",
+    "title": "TUTOR EM ENGENHARIA DE SOFTWARE - ICEV",
+    "company": "Grupo CEV",
+    "companyInitials": "GC",
+    "companyColor": "from-purple-700 via-indigo-700 to-purple-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "Estágio",
+    "experienceLevel": "Júnior",
+    "category": "Administrativo",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Estamos buscando profissionais qualificados para se unir ao Grupo CEV, um líder em educação com 20 anos de sucesso. Valorizamos candidatos que compartilhem nossos princípios de excelência, respeito e inovação. Se você tem novas ideias e habilidades para contribuir, queremos conhe...",
+    "requirements": [
+      "Se você tem novas ideias e habilidades para contribuir, queremos conhecê"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Grupo",
+      "Presencial",
+      "Estágio",
+      "Administrativo",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198080000,
+    "applicationUrl": "https://grupocev.gupy.io/job/eyJqb2JJZCI6MTI1MTYzODIsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 181,
+    "source": "Gupy",
+    "sourceUrl": "https://grupocev.gupy.io/job/eyJqb2JJZCI6MTI1MTYzODIsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12458216",
+    "title": "Auxiliar de Loja - Teresina/PI",
+    "company": "Grupo Diamantes",
+    "companyInitials": "GD",
+    "companyColor": "from-blue-700 via-indigo-700 to-slate-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "SOBRE O GRUPO DIAMANTESO Grupo Diamantes é uma marca especialista no segmento de moda íntima e 100% brasileira. Foi fundado em 2005 na cidade de Frecheirinha, no interior do Ceará. Nasceu com o propósito de oferecer produtos de alta qualidade para toda a família e transformar a v...",
+    "requirements": [
+      "Requisitos e qualificaçõesEnsino médio completo",
+      "Excelente habilidade de comunicação e atendimento ao cliente",
+      "🎓 Convênios com instituições de ensino diversas"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Grupo",
+      "Presencial",
+      "CLT",
+      "Atendimento",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774198020000,
+    "applicationUrl": "https://diamantes.gupy.io/job/eyJqb2JJZCI6MTI0NTgyMTYsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 184,
+    "source": "Gupy",
+    "sourceUrl": "https://diamantes.gupy.io/job/eyJqb2JJZCI6MTI0NTgyMTYsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12530821",
+    "title": "ASSISTENTE CONTÁBIL",
+    "company": "Grupo CEV",
+    "companyInitials": "GC",
+    "companyColor": "from-emerald-700 via-teal-700 to-emerald-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Administrativo",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Estamos buscando profissionais qualificados para se unir ao Grupo CEV, um líder em educação com 20 anos de sucesso. Valorizamos candidatos que compartilhem nossos princípios de excelência, respeito e inovação. Se você tem novas ideias e habilidades para contribuir, queremos conhe...",
+    "requirements": [
+      "Se você tem novas ideias e habilidades para contribuir, queremos conhecê",
+      "Requisitos e qualificaçõesEnsino superior em andamento ou concluído em Ciências Contábeis",
+      "Conhecimentos em contabilidade geral (Lançamentos contábeis, conciliação bancária, classificação de contas, balancetes, DRE) e afins",
+      "Conhecimento sobre SPED e obrigações acessórias (ECD, ECF, REINF, DIRF, MIT e demais obrigações Acessórias)"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Grupo",
+      "Presencial",
+      "CLT",
+      "Administrativo",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774197960000,
+    "applicationUrl": "https://grupocev.gupy.io/job/eyJqb2JJZCI6MTI1MzA4MjEsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 187,
+    "source": "Gupy",
+    "sourceUrl": "https://grupocev.gupy.io/job/eyJqb2JJZCI6MTI1MzA4MjEsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12523301",
+    "title": "ASSISTENTE DE PATRIMÔNIO | DG - Teresina/PI",
+    "company": "Drogaria Globo",
+    "companyInitials": "DG",
+    "companyColor": "from-rose-600 via-pink-700 to-purple-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Administrativo",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Seja bem-vindo à Drogaria GloboFazemos parte do grupo Jorge Batista, que há 75 anos trabalha com dedicação, excelência e responsabilidade para abastecer o mercado das regiões Nordeste (todas as UF’s) e Norte (Amapá, Pará e Tocantins) com produtos de qualidade.Nosso DNA é cuidar a...",
+    "requirements": [
+      "Elaborar relatório de fechamento mensal do Patrimônio (aquisições / transferências / baixas)Executar outras tarefas relacionadas ao cargo, a critério do superior",
+      "Requisitos e qualificaçõesEnsino superior em andamento ou completo em Ciências Contábeis, Administração, Engenharia de Produção ou áreas afins",
+      "Experiência na área de patrimônio",
+      "Desejável vivência com sistema de ERP"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Drogaria",
+      "Presencial",
+      "CLT",
+      "Administrativo",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774197900000,
+    "applicationUrl": "https://drogariaglobo.gupy.io/job/eyJqb2JJZCI6MTI1MjMzMDEsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 190,
+    "source": "Gupy",
+    "sourceUrl": "https://drogariaglobo.gupy.io/job/eyJqb2JJZCI6MTI1MjMzMDEsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12505523",
+    "title": "Atendente - Ibyte Service (Exclusivo PcD)",
+    "company": "Ibyte | Get",
+    "companyInitials": "I|",
+    "companyColor": "from-amber-600 via-orange-700 to-red-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Somos apaixonados por tecnologia! 🤳 Buscamos profissionais que, assim como nós, têm sede de desenvolvimento, foco em resultados e que desejam proporcionar experiências positivas na vida das pessoas. Dê um match nessa oportunidade e venha conquistar sorrisos com a gente. 😁❤ #Junto...",
+    "requirements": [
+      "Somos apaixonados por tecnologia! 🤳 Buscamos profissionais que, assim como nós, têm sede de desenvolvimento, foco em resultados e que desejam proporcionar experiências positivas na vida das pessoas",
+      "Requisitos e qualificaçõesEscolaridade: Ensino médio CompletoNoções de InformáticaInformações adicionaisVale Alimentação ou Refeição"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Ibyte",
+      "Presencial",
+      "CLT",
+      "Atendimento",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774197840000,
+    "applicationUrl": "https://ibyte.gupy.io/job/eyJqb2JJZCI6MTI1MDU1MjMsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 193,
+    "source": "Gupy",
+    "sourceUrl": "https://ibyte.gupy.io/job/eyJqb2JJZCI6MTI1MDU1MjMsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12512462",
+    "title": "APRENDIZ(ADMINISTRATIVO) - TERESINA PI",
+    "company": "3corações",
+    "companyInitials": "3C",
+    "companyColor": "from-cyan-600 via-blue-700 to-indigo-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Sem Experiência",
+    "category": "Administrativo",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "O Grupo 3corações é construído por pessoas, antes de tudo, apaixonadas pelo que fazem. Temos orgulho de crescer pela força do trabalho e seguir, cada vez mais longe, sem esquecer a nossa essência e os nossos valores. É pelo nosso jeito simples de ser que celebramos a diversidade ...",
+    "requirements": [
+      "É pelo nosso jeito simples de ser que celebramos a diversidade de pessoas e as experiências saborosas que entrelaçam histórias",
+      "O resultado é uma companhia com produtos de qualidade, colaboradores e consumidores felizes, fornecedores e parceiros integrados em uma mesma missão proporcionar experiências prazerosas que promovam alegria e bem",
+      "Ensino médio completo ou em andamento",
+      "DesejávelConhecimento nas ferramentas Google (apresentações, documentos e planilhas)"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "3corações",
+      "Presencial",
+      "CLT",
+      "Administrativo",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774197780000,
+    "applicationUrl": "https://3coracoes.gupy.io/job/eyJqb2JJZCI6MTI1MTI0NjIsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 196,
+    "source": "Gupy",
+    "sourceUrl": "https://3coracoes.gupy.io/job/eyJqb2JJZCI6MTI1MTI0NjIsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12515999",
+    "title": "Assistente de Treinamento | Teresina/PI - CSC",
+    "company": "Nazária",
+    "companyInitials": "NA",
+    "companyColor": "from-yellow-600 via-amber-700 to-orange-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Vendas & Mkt",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "A Nazária Distribuidora faz parte do Grupo Jorge Batista, que há 75 anos trabalha com dedicação, excelência e responsabilidade para abastecer o mercado das regiões Nordeste e Norte com produtos de qualidade.Valorização de colaboradores, clientes e parceiros comerciais direcionam ...",
+    "requirements": [
+      "Buscamos alguém que goste de desenvolver pessoas, interagir com diferentes públicos e contribuir para experiências de aprendizagem mais estruturadas e alinhadas às necessidades do negócio",
+      "Requisitos e qualificaçõesEnsino superior completo ou em andamento em Gestão de RH, Administração, Psicologia, Pedagogia, Engenharia de Produção ou áreas correlatas",
+      "Experiência com treinamentos, capacitações ou ações de desenvolvimento de pessoas",
+      "Conhecimento básico/intermediário em Excel e Pacote Office"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Nazária",
+      "Presencial",
+      "CLT",
+      "Vendas & Mkt",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774197720000,
+    "applicationUrl": "https://nazaria.gupy.io/job/eyJqb2JJZCI6MTI1MTU5OTksInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 199,
+    "source": "Gupy",
+    "sourceUrl": "https://nazaria.gupy.io/job/eyJqb2JJZCI6MTI1MTU5OTksInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12449544",
+    "title": "Analista Jurídico Jr",
+    "company": "Unimed Teresina",
+    "companyInitials": "UT",
+    "companyColor": "from-teal-800 via-emerald-800 to-green-950",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Pleno",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Estamos escrevendo uma grande trajetória de cuidado e excelência, e buscamos ser um lugar incrível para trabalhar. Seu propósito se conecta com o nosso? E para nos ajudar a construir essa missão estamos à procura de Analista Jurídico, com experiência em acompanhamento de moviment...",
+    "requirements": [
+      "Seu propósito se conecta com o nosso? E para nos ajudar a construir essa missão estamos à procura de Analista Jurídico, com experiência em acompanhamento de movimentação de processos judiciais e administrativos",
+      "Se possui experiência, venha fazer parte do nosso time",
+      "Requisitos e qualificaçõesEnsino superior completo em Direito",
+      "Experiência com elaboração de pareceres administrativos, relatórios sistematizados, extração de dados de sistema jurídico(ex"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Unimed",
+      "Presencial",
+      "CLT",
+      "Atendimento"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774197660000,
+    "applicationUrl": "https://unimedteresina.gupy.io/job/eyJqb2JJZCI6MTI0NDk1NDQsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 202,
+    "source": "Gupy",
+    "sourceUrl": "https://unimedteresina.gupy.io/job/eyJqb2JJZCI6MTI0NDk1NDQsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12503191",
+    "title": "Gerente de Vendas - Loja Shopping Teresina - Teresina/PI",
+    "company": "Atendimento e Lojas TIM",
+    "companyInitials": "AE",
+    "companyColor": "from-purple-700 via-indigo-700 to-purple-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Sênior",
+    "category": "Vendas & Mkt",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "#SomosMaisNaTIMFazer parte da TIM é se conectar com o que acreditamos e ter MAIS sintonia com todo o TIMe. É aprender novas formas de oferecer ao mundo um trabalho com MAIS propósito.Aprendizado na TIM é MAIS que possibilidade.É o que nos move a fazer MAIS e melhor. É desenvolver...",
+    "requirements": [
+      "É desenvolver habilidades com criatividade e transformar tecnologia em MAIS liberdade",
+      "#imagineaspossibilidadesResponsabilidades e atribuiçõesDescrição do perfil:Responsável por garantir o padrão de excelência com foco no atendimento e gestão do salão de vendas, proporcionando melhor experiência ao cliente e qualidade na venda, cuidando sempre do desenvolvimento e motivação da equipePrincipais Atividades:",
+      "Contribuir com a gestão do salão de vendas, garantindo a melhor experiência do cliente",
+      "Garantir e apoiar a e quipe no processo de vendas e pós vendas, visando a melhor experiência para o cliente e o atingimento dos resultados"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Atendimento",
+      "Presencial",
+      "CLT",
+      "Vendas & Mkt",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774197600000,
+    "applicationUrl": "https://atendimentoelojastim.gupy.io/job/eyJqb2JJZCI6MTI1MDMxOTEsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 205,
+    "source": "Gupy",
+    "sourceUrl": "https://atendimentoelojastim.gupy.io/job/eyJqb2JJZCI6MTI1MDMxOTEsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12512684",
+    "title": "Auxiliar de R&S",
+    "company": "R Damásio",
+    "companyInitials": "RD",
+    "companyColor": "from-blue-700 via-indigo-700 to-slate-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Administrativo",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Mais do que preencher uma posição, queremos encontrar pessoas que desejam construir uma carreira de verdade. Aqui, você terá acesso a desafios reais, trilhas de desenvolvimento e um ambiente que reconhece e valoriza a entrega de cada colaborador.Nossa cultura é guiada pelo Jeito ...",
+    "requirements": [
+      "Manter comunicação clara e frequente com candidatos e lideranças, garantindo uma boa experiência ao longo do processo",
+      "Requisitos e qualificaçõesNecessárioEnsino superior em andamento ou concluído em Psicologia, Administração, Gestão de Recursos Humanos ou áreas correlatas",
+      "Experiência com triagem de currículos, contato com candidatos e condução de entrevistas",
+      "Conhecimento básico/intermediário em Pacote Office"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "R",
+      "Presencial",
+      "CLT",
+      "Administrativo",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774197540000,
+    "applicationUrl": "https://rdamasio.gupy.io/job/eyJqb2JJZCI6MTI1MTI2ODQsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 208,
+    "source": "Gupy",
+    "sourceUrl": "https://rdamasio.gupy.io/job/eyJqb2JJZCI6MTI1MTI2ODQsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12497426",
+    "title": "Especialista Fiscal Tributário",
+    "company": "Unimed Teresina",
+    "companyInitials": "UT",
+    "companyColor": "from-emerald-700 via-teal-700 to-emerald-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Administrativo",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Estamos construindo uma trajetória de cuidado, excelência e sustentabilidade, e buscamos pessoas que queiram fazer parte desse propósito. Para fortalecer nosso time, estamos em busca de um(a) Especialista Fiscal Tributário, com sólida experiência em legislação e processos tributá...",
+    "requirements": [
+      "Para fortalecer nosso time, estamos em busca de um(a) Especialista Fiscal Tributário, com sólida experiência em legislação e processos tributários, capaz de atuar em temas de maior complexidade e contribuir para a segurança, conformidade e eficiência fiscal da Operadora",
+      "Promover orientação e disseminação do conhecimento técnico junto à equipe Fiscal/Tributária e áreas parceiras, especialmente quanto a alterações normativas, novos critérios, controles e impactos sistêmicos",
+      "Requisitos e qualificaçõesEnsino superior completo em Ciências Contábeis, pós",
+      "Experiência em processos e legislação tributária federal, estadual e municipal, apuração de tributos, obrigações acessórias, retenções fiscais, planejamento tributário, créditos e regularização fiscal, auditorias e controles fiscais"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Unimed",
+      "Presencial",
+      "CLT",
+      "Administrativo",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774197480000,
+    "applicationUrl": "https://unimedteresina.gupy.io/job/eyJqb2JJZCI6MTI0OTc0MjYsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 211,
+    "source": "Gupy",
+    "sourceUrl": "https://unimedteresina.gupy.io/job/eyJqb2JJZCI6MTI0OTc0MjYsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12483108",
+    "title": "Aira - Fisioterapeuta - Teresina/Piaiu",
+    "company": "Aira _ Por uma vida sem dor e sem cirurgias",
+    "companyInitials": "A_",
+    "companyColor": "from-rose-600 via-pink-700 to-purple-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "A Aira é uma healthtech que integra a saúde do corpo e da mente por meio de um método de educação postural, a Ginástica Holística - Método Ehrenfried, e estimula a consciência corporal. Estamos presentes nos estados de São Paulo, Rio de Janeiro, Espirito Santo e ParanáFocada no r...",
+    "requirements": [
+      "Habilidades em tecnologia e atendimentos em grupo",
+      "Interesse no método da Ginástica Holística Informações adicionaisObrigatório disponibilidade mínima de 15 dias, para treinamento na metodologia Aira online (Ginástica Holística)"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Aira",
+      "Presencial",
+      "CLT",
+      "Atendimento",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774197420000,
+    "applicationUrl": "https://airasaude.gupy.io/job/eyJqb2JJZCI6MTI0ODMxMDgsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 214,
+    "source": "Gupy",
+    "sourceUrl": "https://airasaude.gupy.io/job/eyJqb2JJZCI6MTI0ODMxMDgsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12459834",
+    "title": "Parceiro(a) Institucional",
+    "company": "NWADV",
+    "companyInitials": "NW",
+    "companyColor": "from-amber-600 via-orange-700 to-red-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Administrativo",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Acreditamos que a perpetuidade das empresas só é possível com muita coragem e planejamento e, com base nisso, criamos soluções empresariais e financeiras inovadoras para repensar a forma como nossos clientes estão estruturados. Nossa atuação assertiva e capilaridade, garantem que...",
+    "requirements": [
+      "Requisitos e qualificaçõesEnsino superior cursando ou completo",
+      "Será um diferencial se tiver conhecimento na área fiscal/tributária"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "NWADV",
+      "Presencial",
+      "CLT",
+      "Administrativo"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774197360000,
+    "applicationUrl": "https://nwadv.gupy.io/job/eyJqb2JJZCI6MTI0NTk4MzQsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 217,
+    "source": "Gupy",
+    "sourceUrl": "https://nwadv.gupy.io/job/eyJqb2JJZCI6MTI0NTk4MzQsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12508533",
+    "title": "BANCO DE TALENTOS - Pessoa Com Deficiência | DG - Teresina/Timon",
+    "company": "Drogaria Globo",
+    "companyInitials": "DG",
+    "companyColor": "from-cyan-600 via-blue-700 to-indigo-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Vendas & Mkt",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Seja bem-vindo à Drogaria Globo ❤️💙 Fazemos parte do grupo Jorge Batista, que há 75 anos trabalha com dedicação, excelência e responsabilidade para abastecer o mercado das regiões Nordeste (todas as UF’s) e Norte (Amapá, Pará e Tocantins) com produtos de qualidade.Acreditamos que...",
+    "requirements": [
+      "Aqui, cada história, habilidade e experiência importa",
+      "Requisitos e qualificaçõesEnsino Médio incompleto ou Completo",
+      "Disponibilidade em Trabalhar 44hs/ semanaisTer boa comunciação, gentileza e proatividade"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Drogaria",
+      "Presencial",
+      "CLT",
+      "Vendas & Mkt",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774197300000,
+    "applicationUrl": "https://drogariaglobo.gupy.io/job/eyJqb2JJZCI6MTI1MDg1MzMsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 220,
+    "source": "Gupy",
+    "sourceUrl": "https://drogariaglobo.gupy.io/job/eyJqb2JJZCI6MTI1MDg1MzMsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12486211",
+    "title": "Vigilante - Teresina/PI",
+    "company": "VAGAS CONFIDENCIAL",
+    "companyInitials": "VC",
+    "companyColor": "from-yellow-600 via-amber-700 to-orange-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Buscamos profissional para a posição de Vigilante. Trata-se de uma oportunidade para quem deseja atuar em um ambiente dinâmico e desafiador, fazendo cumprir normas de segurança e política da empresa, tais como: Integridade, Excelência, Simplicidade e Criatividade, valorizando sem...",
+    "requirements": [
+      "Requisitos e qualificaçõesEnsino médio completo",
+      "Disponibilidade para viagens",
+      "Desejável conhecimento em políticas de segurança patrimonial",
+      "Ter um perfil concentrado e focado"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "VAGAS",
+      "Presencial",
+      "CLT",
+      "Atendimento",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774197240000,
+    "applicationUrl": "https://vagasconfidencial.gupy.io/job/eyJqb2JJZCI6MTI0ODYyMTEsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 223,
+    "source": "Gupy",
+    "sourceUrl": "https://vagasconfidencial.gupy.io/job/eyJqb2JJZCI6MTI0ODYyMTEsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12505227",
+    "title": "EXCLUSIVO PARA PESSOAS COM DEFICIÊNCIA (PCD) - Teresina/PI",
+    "company": "REDE CACIQUE",
+    "companyInitials": "RC",
+    "companyColor": "from-teal-800 via-emerald-800 to-green-950",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Vendas & Mkt",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Estamos em busca de profissionais com deficiência para integrar nossa equipe! Se você tem experiência ou interesse em atuar com Atendimento ao Cliente e Vendas, essa pode ser a oportunidade ideal para você.Se deseja um novo desafio em um ambiente dinâmico e inclusivo, venha cresc...",
+    "requirements": [
+      "Estamos em busca de profissionais com deficiência para integrar nossa equipe! Se você tem experiência ou interesse em atuar com Atendimento ao Cliente e Vendas, essa pode ser a oportunidade ideal para você",
+      "Manter um relacionamento positivo com os clientes, garantindo uma experiência de atendimento satisfatória",
+      "Ensino Médio Completo",
+      "Experiência prévia com atendimento ao cliente, vendas ou atividades administrativas (desejável, mas não obrigatória)"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "REDE",
+      "Presencial",
+      "CLT",
+      "Vendas & Mkt",
+      "PCD"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774197180000,
+    "applicationUrl": "https://redecacique.gupy.io/job/eyJqb2JJZCI6MTI1MDUyMjcsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 226,
+    "source": "Gupy",
+    "sourceUrl": "https://redecacique.gupy.io/job/eyJqb2JJZCI6MTI1MDUyMjcsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12378430",
+    "title": "Assistente de Relacionamento com o Cliente I",
+    "company": "Unimed Teresina",
+    "companyInitials": "UT",
+    "companyColor": "from-purple-700 via-indigo-700 to-purple-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Estamos escrevendo uma grande trajetória de cuidado e excelência, e buscamos ser um lugar incrível para trabalhar. Seu propósito se conecta com o nosso? E para nos ajudar a construir essa missão estamos à procura de Assistente de Relacionamento I, que tenha experiência com atendi...",
+    "requirements": [
+      "Seu propósito se conecta com o nosso? E para nos ajudar a construir essa missão estamos à procura de Assistente de Relacionamento I, que tenha experiência com atendimento em Operadora de Plano de Saúde",
+      "Se você tem esse perfil, queremos você em nosso time",
+      "Demonstrar habilidades de comunicação escrita e oral de forma clara e objetiva",
+      "se atualizado quanto aos avanços tecnológicos referentes a sua área de atuação, ROL, normas e resoluções da ANS, manual de intercâmbio, visando o aprimoramento profissional, repasse de conhecimentos, sugestões de melhorias em processos, contribuindo para a melhoria contínua"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Unimed",
+      "Presencial",
+      "CLT",
+      "Atendimento"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774197120000,
+    "applicationUrl": "https://unimedteresina.gupy.io/job/eyJqb2JJZCI6MTIzNzg0MzAsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 229,
+    "source": "Gupy",
+    "sourceUrl": "https://unimedteresina.gupy.io/job/eyJqb2JJZCI6MTIzNzg0MzAsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
+  },
+  {
+    "id": "gupy-12501965",
+    "title": "Operador(a) de Loja",
+    "company": "Assaí Atacadista",
+    "companyInitials": "AA",
+    "companyColor": "from-blue-700 via-indigo-700 to-slate-900",
+    "location": "Teresina - Piauí",
+    "workMode": "Presencial",
+    "contractType": "CLT",
+    "experienceLevel": "Júnior",
+    "category": "Atendimento",
+    "salary": "Salário a combinar (Divulgado na Gupy)",
+    "description": "Faça parte do crescimento do Assaí! Com lojas espalhadas por todo Brasil com um time diverso de + 80 mil colaboradores, vivemos com paixão para atender os(as) nossos(as) clientes. Somos reconhecidos como um excelente lugar para se trabalhar, proporcionando um ambiente acolhedor, ...",
+    "requirements": [
+      "Requisitos e qualificaçõesFormação acadêmica mínima: Ensino Médio Completo",
+      "Experiência: não é necessário experiência na funçãoInformações adicionaisBenefícios:🩺 Assistência Médica e Odontológica💳 Vale"
+    ],
+    "benefits": [
+      "Benefícios informados no processo seletivo",
+      "Oportunidade de crescimento profissional",
+      "Ambiente dinâmico e acolhedor",
+      "Inscrição 100% digital e gratuita via Gupy"
+    ],
+    "tags": [
+      "Gupy Oficial",
+      "Teresina",
+      "Assaí",
+      "Presencial",
+      "CLT",
+      "Atendimento"
+    ],
+    "postedAt": "Gupy • Publicada recentemente",
+    "timestamp": 1774197060000,
+    "applicationUrl": "https://assai.gupy.io/job/eyJqb2JJZCI6MTI1MDE5NjUsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal",
+    "isNew": true,
+    "isFeatured": false,
+    "viewsCount": 232,
+    "source": "Gupy",
+    "sourceUrl": "https://assai.gupy.io/job/eyJqb2JJZCI6MTI1MDE5NjUsInNvdXJjZSI6Imd1cHlfcG9ydGFsIn0=?jobBoardSource=gupy_portal"
   }
 ];
-
-export const GUPY_CONVERTED_JOBS: Job[] = GUPY_RAW_JOBS.map((g, idx) => {
-  const companyInitials = g.empresa
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
-
-  const companyColors = [
-    'from-emerald-700 via-teal-700 to-emerald-900',
-    'from-blue-700 via-indigo-700 to-slate-900',
-    'from-purple-700 via-indigo-700 to-purple-900',
-    'from-pink-600 via-rose-700 to-purple-900',
-    'from-yellow-600 via-amber-700 to-orange-900',
-    'from-sky-600 via-blue-700 to-indigo-900',
-    'from-rose-600 via-pink-700 to-purple-900',
-    'from-amber-600 via-orange-700 to-red-900',
-    'from-cyan-600 via-blue-700 to-indigo-900',
-    'from-teal-800 via-emerald-800 to-green-950'
-  ];
-
-  const tags = [
-    'Gupy Oficial',
-    'Teresina',
-    g.empresa.split(' ')[0],
-    g.area.split('/')[0].trim(),
-    g.modalidade,
-    g.contrato,
-    ...(g.isPcdExclusive ? ['Exclusivo PCD', 'Inclusão'] : [])
-  ];
-
-  return {
-    id: `gupy-${idx + 1}-${g.empresa.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
-    title: g.cargo,
-    company: g.empresa,
-    companyInitials: companyInitials || 'GP',
-    companyColor: companyColors[idx % companyColors.length],
-    location: 'Teresina - PI',
-    workMode: g.modalidade,
-    contractType: g.contrato,
-    experienceLevel: g.nivel,
-    category: g.area.split('/')[0].trim(),
-    salary: g.remuneracao_beneficios[0] || 'A Combinar + Benefícios',
-    description: `Oportunidade oficial via Portal Gupy: ${g.cargo} na empresa ${g.empresa} em Teresina - PI. Publicada em ${g.data_publicacao}. Candidatura 100% digital diretamente pelo link oficial da Gupy.`,
-    requirements: g.requisitos,
-    benefits: g.remuneracao_beneficios,
-    tags: Array.from(new Set(tags)),
-    postedAt: `Gupy • Publicada em ${g.data_publicacao}`,
-    timestamp: Date.now() - idx * 1000 * 60 * 20,
-    applicationUrl: g.link_candidatura_gupy,
-    isNew: true,
-    isFeatured: idx < 3,
-    viewsCount: Math.floor(65 + Math.random() * 90),
-    source: 'Gupy',
-    sourceUrl: 'https://portal.gupy.io/job-search/sortBy=publishedDate&state=Piau%C3%AD&city[]=Teresina'
-  };
-});

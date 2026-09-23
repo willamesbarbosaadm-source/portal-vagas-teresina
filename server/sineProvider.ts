@@ -31,7 +31,8 @@ function getSineDb() {
       return null;
     }
     const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfigData);
-    return getFirestore(app);
+    const dbId = process.env.VITE_FIREBASE_DATABASE_ID || firebaseConfigData.firestoreDatabaseId || 'ai-studio-vaiquedcertoempr-2c1e0223-76a1-4104-afc9-edc49ea74413';
+    return getFirestore(app, dbId);
   } catch (err) {
     console.error('Erro ao inicializar Firestore em SineProvider:', err);
     return null;
