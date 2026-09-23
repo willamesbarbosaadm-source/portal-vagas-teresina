@@ -228,7 +228,7 @@ export default function App() {
     } catch (e) {
       console.error(e);
     }
-    return INITIAL_SINE_JOBS;
+    return [];
   });
   const [selectedSineJob, setSelectedSineJob] = useState<SineJob | null>(null);
   const [isSinePostosOpen, setIsSinePostosOpen] = useState(false);
@@ -247,6 +247,31 @@ export default function App() {
       erro: false
     }
   ]);
+
+  // Carrega as vagas reais do SINE-PI. O catálogo local não é usado como dado real.
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch('/api/sine/jobs', { cache: 'no-store' })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`SINE API HTTP ${response.status}`);
+        return response.json();
+      })
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.success && Array.isArray(data.jobs)) {
+          setSineJobs(data.jobs);
+        }
+      })
+      .catch((error) => {
+        console.warn('SINE-PI: não foi possível carregar as vagas reais:', error);
+        // Mantém o último conjunto local salvo, se existir; não inventa vagas.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleTriggerSineSync = () => {
     const newLog: SineSyncLog = {
