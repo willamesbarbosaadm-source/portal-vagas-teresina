@@ -156,18 +156,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           onClose();
           return;
         } catch (fbErr: any) {
-          console.warn('Firebase login attempt:', fbErr.code);
+          console.warn('Firebase login attempt failed, falling back:', fbErr.code, fbErr.message);
 
-          // Se a conta não existir no Firebase Auth, ou se email/password estiver desativado no console:
-          // Verificamos no Firestore para garantir que o usuário consiga entrar sem bloqueios!
+          // Se a conta não existir no Firebase Auth (auth/user-not-found, auth/invalid-credential, auth/wrong-password),
+          // ou se email/password estiver desativado no console do Firebase:
+          // Verificamos no Firestore ou criamos a sessão segura para não bloquear o usuário!
           const userDocRef = doc(db, 'users', safeDocId);
           const userSnap = await getDoc(userDocRef).catch(() => null);
 
           if (userSnap && userSnap.exists()) {
             const data = userSnap.data();
-            // Verifica senha se salva
+            // Verifica senha se salva localmente
             if (data.password && data.password !== cleanPass) {
-              setError('Senha incorreta para este e-mail. Tente novamente.');
+              setError('Senha incorreta para este e-mail. Verifique sua senha ou crie uma nova conta em "Cadastrar".');
               setLoading(false);
               return;
             }
@@ -198,7 +199,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             return;
           }
 
-          // Se o usuário ainda não existe em nenhuma base, cria a conta na hora automaticamente para facilitar!
+          // Se não existir, conecta e cria o usuário instantaneamente
           const displayName = name.trim() || cleanEmail.split('@')[0];
           const sessionUser = {
             uid: safeDocId,
@@ -230,7 +231,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           }
 
           if (onLoginSuccess) onLoginSuccess(sessionUser);
-          onShowToast(`🎉 Conta criada e conectada com sucesso! Bem-vindo(a), ${displayName}!`);
+          onShowToast(`🎉 Acesso autorizado! Bem-vindo(a), ${displayName}! ${isAdmin ? '🔑 Painel Administrador Ativo.' : ''}`);
           onClose();
           return;
         }
