@@ -1,5 +1,6 @@
-import React, { useRef, useEffect } from 'react';
-import armadilloPoster from '../assets/images/armadillo_calling_1790169038271.jpg';
+import React, { useRef, useEffect, useState } from 'react';
+import armadilloCalling from '../assets/images/armadillo_calling_1790169038271.jpg';
+import armadilloClean from '../assets/images/armadillo_transparent_clean_1790170398950.jpg';
 
 interface FloatingMascotProps {
   onClick?: () => void;
@@ -7,17 +8,23 @@ interface FloatingMascotProps {
 
 export const FloatingMascot: React.FC<FloatingMascotProps> = ({ onClick }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  const [imageSrc, setImageSrc] = useState(armadilloCalling);
 
   useEffect(() => {
-    // Garante que o vídeo inicie automaticamente e sem som de forma fluida (60fps)
-    if (videoRef.current) {
-      videoRef.current.defaultMuted = true;
-      videoRef.current.muted = true;
-      videoRef.current.play().catch(() => {
-        // Autoplay policy fallback silencioso
+    const video = videoRef.current;
+    if (!video || videoError) return;
+
+    video.defaultMuted = true;
+    video.muted = true;
+    
+    video.play()
+      .then(() => setIsVideoPlaying(true))
+      .catch(() => {
+        // Autoplay bloqueado: imagem estática permanece visível
       });
-    }
-  }, []);
+  }, [videoError]);
 
   return (
     <div 
@@ -25,29 +32,45 @@ export const FloatingMascot: React.FC<FloatingMascotProps> = ({ onClick }) => {
       onClick={onClick}
       title="Vagas abertas hoje! Clique para ver."
     >
-      {/* Brilho pulsante suave ao redor do vídeo */}
+      {/* Brilho pulsante suave ao redor */}
       <div className="absolute inset-0 bg-yellow-400/30 blur-xl rounded-2xl pointer-events-none group-hover:bg-yellow-400/50 transition-colors" />
 
-      {/* Tag de vídeo MP4 contínuo e ultra fluido a 60fps */}
-      <video
-        ref={videoRef}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        poster={armadilloPoster}
-        className="w-36 sm:w-40 h-auto rounded-2xl shadow-2xl border-2 border-yellow-400/90 bg-[#1e1338] relative block object-cover"
-      >
-        <source src="/tatu-animado.mp4" type="video/mp4" />
-        <source src="/TATU.mp4" type="video/mp4" />
-        <source src="/tatu.mp4" type="video/mp4" />
+      <div className="w-36 sm:w-40 aspect-square rounded-2xl shadow-2xl border-2 border-yellow-400/90 bg-[#1e1338] relative overflow-hidden flex items-center justify-center">
+        {/* Camada 1: Imagem estática sempre visível */}
         <img 
-          src={armadilloPoster} 
+          src={imageSrc} 
           alt="Mascote Tatu" 
-          className="w-full h-full object-cover rounded-2xl" 
+          className="w-full h-full object-cover rounded-2xl block"
+          loading="eager"
+          onError={() => {
+            if (imageSrc !== armadilloClean) setImageSrc(armadilloClean);
+          }}
         />
-      </video>
+
+        {/* Camada 2: Vídeo progressivo sobreposto somente se tocar */}
+        {!videoError && (
+          <video
+            ref={videoRef}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="metadata"
+            className={`absolute inset-0 w-full h-full object-cover rounded-2xl pointer-events-none transition-opacity duration-500 ${
+              isVideoPlaying ? 'opacity-100' : 'opacity-0'
+            }`}
+            onPlaying={() => setIsVideoPlaying(true)}
+            onError={() => {
+              setIsVideoPlaying(false);
+              setVideoError(true);
+            }}
+          >
+            <source src="/tatu-animado.mp4" type="video/mp4" onError={() => setVideoError(true)} />
+            <source src="/TATU.mp4" type="video/mp4" />
+            <source src="/tatu.mp4" type="video/mp4" />
+          </video>
+        )}
+      </div>
     </div>
   );
 };
