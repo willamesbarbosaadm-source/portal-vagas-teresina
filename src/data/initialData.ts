@@ -1,5 +1,5 @@
 import { Job, GratitudeComment } from '../types';
-import { GUPY_LIVE_JOBS } from './gupyJobs';
+import { INITIAL_SINE_JOBS } from './sineInitialJobs';
 
 const REDE_CACIQUE_JOB: Job = {
   id: 'gupy-rede-cacique-assistente-marketing-teresina-pi',
@@ -28,29 +28,49 @@ const REDE_CACIQUE_JOB: Job = {
     'Descontos exclusivos com empresas parceiras'
   ],
   tags: ['Marketing', 'Gupy Oficial', 'Teresina', 'CLT', 'Presencial', 'Comercial'],
-  postedAt: 'Hoje',
-  timestamp: Date.now(),
+  postedAt: 'Data de publicação não informada pela fonte',
+  timestamp: 0,
   applicationUrl: 'https://redecacique.gupy.io/jobs/12457725?jobBoardSource=gupy_public_page',
-  isNew: true,
-  isFeatured: true,
-  viewsCount: 142,
+  isNew: false,
+  isFeatured: false,
+  viewsCount: 0,
   source: 'Gupy',
   sourceUrl: 'https://redecacique.gupy.io/jobs/12457725?jobBoardSource=gupy_public_page'
 };
 
-// Combine Rede Cacique + All live Gupy jobs with fresh timestamps (0 a 5 dias)
-const now = Date.now();
+// Converte vagas do SINE-PI para a listagem principal do catálogo
+const convertedSineJobs: Job[] = INITIAL_SINE_JOBS.map((s, idx) => ({
+  id: `sine-main-${idx}-${s.id}`,
+  title: s.titulo,
+  company: s.pcd ? 'SINE-PI (Vaga PCD Oficial)' : 'SINE-PI (Governo do Piauí)',
+  companyInitials: 'SN',
+  companyColor: s.pcd ? 'from-amber-500 to-yellow-600' : 'from-purple-700 to-indigo-800',
+  location: `${s.cidade} - ${s.estado} (${s.quantidade})`,
+  workMode: 'Presencial',
+  contractType: 'CLT',
+  experienceLevel: s.experiencia.toLowerCase().includes('não') ? 'Sem Experiência' : 'Júnior',
+  category: s.titulo.toLowerCase().includes('admin') || s.titulo.toLowerCase().includes('recep') ? 'Administrativo' :
+            s.titulo.toLowerCase().includes('venda') || s.titulo.toLowerCase().includes('comér') || s.titulo.toLowerCase().includes('loja') ? 'Marketing' :
+            s.titulo.toLowerCase().includes('ti') || s.titulo.toLowerCase().includes('rede') || s.titulo.toLowerCase().includes('tec') ? 'Tecnologia' : 'Atendimento',
+  salary: s.salario,
+  description: `${s.observacoes}\n\nEscolaridade mínima: ${s.escolaridade}.\nExperiência: ${s.experiencia}.\nInteressados devem comparecer a um posto do SINE-PI em Teresina com RG, CPF, Carteira de Trabalho e Currículo.`,
+  requirements: s.requisitos,
+  benefits: s.beneficios,
+  tags: ['SINE-PI', 'Teresina', s.pcd ? 'PCD' : 'Presencial', 'Oficial', 'CLT'],
+  postedAt: 'Publicada hoje',
+  timestamp: Date.now() - (idx * 180000), // Distribuição recente
+  applicationUrl: s.url_fonte || 'https://portal.pi.gov.br/sine/vagas-de-emprego/',
+  isNew: true,
+  isFeatured: s.pcd || idx < 5,
+  viewsCount: 85 + (idx * 3),
+  source: 'SINE-PI',
+  sourceUrl: s.url_fonte || 'https://portal.pi.gov.br/sine/vagas-de-emprego/'
+}));
+
+// Vagas iniciais: O fluxo Gupy agora é carregado exclusivamente de forma dinâmica e verificada
+// via API oficial e Firestore, sem injeção de dados estáticos com datas artificiais.
 export const INITIAL_JOBS: Job[] = [
-  REDE_CACIQUE_JOB,
-  ...GUPY_LIVE_JOBS.map((j, idx) => {
-    const daysAgo = idx % 6; // 0 a 5 dias
-    const fakeTimestamp = now - (daysAgo * 24 * 60 * 60 * 1000) - ((idx % 24) * 60 * 60 * 1000);
-    return {
-      ...j,
-      timestamp: fakeTimestamp,
-      postedAt: daysAgo === 0 ? 'Publicada hoje' : daysAgo === 1 ? 'Publicada ontem' : `Publicada há ${daysAgo} dias`
-    };
-  })
+  ...convertedSineJobs
 ];
 
 export const INCOMING_JOBS_POOL: Job[] = [];

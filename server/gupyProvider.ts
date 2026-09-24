@@ -58,32 +58,36 @@ export interface ConvertedGupyJob {
   companyInitials: string;
   companyColor: string;
   location: string;
-  workMode: 'Presencial' | 'Híbrido' | 'Remoto';
+  workMode: 'Presencial' | 'Híbrido' | 'Remoto' | string;
   contractType: string;
   experienceLevel: string;
   category: string;
   salary: string;
+  education: string;
   description: string;
   requirements: string[];
   benefits: string[];
   tags: string[];
   postedAt: string;
   timestamp: number;
+  publishedDate?: string;
+  updatedAt?: number;
   applicationUrl: string;
   isNew: boolean;
   isFeatured: boolean;
   viewsCount: number;
-  source: string;
+  source: 'Gupy';
   sourceUrl: string;
   pcdOnly?: boolean;
 }
 
 function cleanCompanyName(raw: string): string {
-  if (!raw) return 'Empresa parceira';
+  if (!raw) return 'Não informado pela fonte';
   return raw.split(' - ')[0].split(' #')[0].trim();
 }
 
 function getInitials(name: string): string {
+  if (!name || name === 'Não informado pela fonte') return 'GP';
   const words = name.trim().split(/\s+/);
   if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
   return (words[0][0] + words[1][0]).toUpperCase();
@@ -99,6 +103,47 @@ function getCompanyColor(company: string): string {
     hash = company.charCodeAt(i) + ((hash << 5) - hash);
   }
   return colors[Math.abs(hash) % colors.length];
+}
+
+function mapContractType(rawType: string): string {
+  switch (rawType) {
+    case 'vacancy_type_effective':
+      return 'Efetivo (CLT)';
+    case 'vacancy_type_internship':
+      return 'Estágio';
+    case 'vacancy_type_apprentice':
+      return 'Jovem Aprendiz';
+    case 'vacancy_type_temporary':
+      return 'Temporário';
+    case 'vacancy_type_talent_pool':
+      return 'Banco de Talentos';
+    case 'vacancy_type_autonomous':
+      return 'Autônomo';
+    case 'vacancy_legal_entity':
+      return 'PJ (Pessoa Jurídica)';
+    default:
+      return 'Não informado pela fonte';
+  }
+}
+
+function mapWorkMode(wp: string): 'Presencial' | 'Híbrido' | 'Remoto' | string {
+  if (wp === 'remote') return 'Remoto';
+  if (wp === 'hybrid') return 'Híbrido';
+  if (wp === 'on-site') return 'Presencial';
+  return 'Não informado pela fonte';
+}
+
+function mapLocation(raw: GupyRawJob): string {
+  if (raw.workplaceType === 'remote') {
+    return 'Remoto';
+  }
+  if (raw.city && raw.state) {
+    return `${raw.city} - ${raw.state}`;
+  }
+  if (raw.city) {
+    return raw.city;
+  }
+  return 'Não informado pela fonte';
 }
 
 function inferCategory(title: string, desc: string): string {
@@ -120,7 +165,7 @@ function inferExperienceLevel(title: string): string {
   if (t.includes('junior') || t.includes('júnior') || t.includes('auxiliar') || t.includes('assistente')) return 'Júnior';
   if (t.includes('senior') || t.includes('sênior') || t.includes('gerente') || t.includes('coordenador') || t.includes('supervisor')) return 'Sênior';
   if (t.includes('pleno')) return 'Pleno';
-  return 'Geral';
+  return 'Sem Experiência';
 }
 
 function extractRequirementsAndBenefits(description: string): { requirements: string[]; benefits: string[] } {
@@ -160,46 +205,63 @@ function extractRequirementsAndBenefits(description: string): { requirements: st
 
 export function convertGupyJob(raw: GupyRawJob): ConvertedGupyJob {
   const company = cleanCompanyName(raw.careerPageName);
-  const workMode: 'Presencial' | 'Híbrido' | 'Remoto' = 
-    raw.workplaceType === 'remote' ? 'Remoto' : 
-    raw.workplaceType === 'hybrid' ? 'Híbrido' : 'Presencial';
+  const workMode = mapWorkMode(raw.workplaceType);
+  const contractType = mapContractType(raw.type);
+  const location = mapLocation(raw);
 
   const descClean = (raw.description || '')
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
-    .replace(/<[^>]+>/g, ' ');
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
   const { requirements, benefits } = extractRequirementsAndBenefits(raw.description || '');
 
-  const publishedMs = new Date(raw.publishedDate).getTime();
-  const diffDays = Math.floor((Date.now() - publishedMs) / (1000 * 60 * 60 * 24));
-  const postedAt = diffDays <= 0 ? 'Hoje' : diffDays === 1 ? 'Ontem' : `Há ${diffDays} dias`;
+  // Trata data original de publicação sem cálculos artificiais
+  let postedAt = 'Data de publicação não informada pela fonte';
+  let timestamp = 0;
+  let publishedDate: string | undefined = undefined;
+  let isNew = false;
+
+  if (raw.publishedDate) {
+    const pubDate = new Date(raw.publishedDate);
+    if (!isNaN(pubDate.getTime())) {
+      timestamp = pubDate.getTime();
+      publishedDate = raw.publishedDate;
+      // Formata data real brasileira vinda da fonte original
+      postedAt = pubDate.toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza' });
+      isNew = (Date.now() - timestamp) <= (7 * 24 * 60 * 60 * 1000);
+    }
+  }
 
   return {
     id: `gupy-${raw.id}`,
-    title: raw.name.trim(),
+    title: raw.name ? raw.name.trim() : 'Título não informado pela fonte',
     company,
     companyInitials: getInitials(company),
     companyColor: getCompanyColor(company),
-    location: `${raw.city || 'Teresina'} - ${raw.state || 'PI'}`,
+    location,
     workMode,
-    contractType: 'CLT',
-    experienceLevel: inferExperienceLevel(raw.name),
-    category: inferCategory(raw.name, descClean),
-    salary: 'Salário a combinar (Confira na Gupy)',
-    description: descClean.substring(0, 500) + '...',
-    requirements: requirements.length > 0 ? requirements : ['Confira os requisitos completos e inscreva-se no link da Gupy.'],
-    benefits: benefits.length > 0 ? benefits : ['Benefícios compatíveis com o mercado informados no processo seletivo Gupy.'],
-    tags: ['Gupy', 'Teresina', workMode, 'Vaga Real'],
+    contractType,
+    experienceLevel: inferExperienceLevel(raw.name || ''),
+    category: inferCategory(raw.name || '', descClean),
+    salary: 'Não informado pela fonte',
+    education: 'Não informado pela fonte',
+    description: descClean.length > 0 ? (descClean.substring(0, 500) + '...') : 'Descrição não informada pela fonte',
+    requirements: requirements.length > 0 ? requirements : ['Consulte os requisitos completos no link oficial da Gupy.'],
+    benefits: benefits.length > 0 ? benefits : ['Consulte os benefícios no link oficial da Gupy.'],
+    tags: ['Gupy Oficial', location.includes('Teresina') ? 'Teresina' : location, workMode, contractType].filter(Boolean),
     postedAt,
-    timestamp: publishedMs,
-    applicationUrl: raw.jobUrl,
-    isNew: diffDays <= 7,
-    isFeatured: diffDays <= 3,
-    viewsCount: Math.floor(Math.random() * 80) + 20,
+    timestamp,
+    publishedDate,
+    applicationUrl: raw.jobUrl || '',
+    isNew,
+    isFeatured: false,
+    viewsCount: 0,
     source: 'Gupy',
-    sourceUrl: raw.jobUrl,
-    pcdOnly: raw.disabilities
+    sourceUrl: raw.jobUrl || '',
+    pcdOnly: Boolean(raw.disabilities)
   };
 }
 
@@ -220,8 +282,32 @@ export async function fetchGupyTeresinaJobs(): Promise<ConvertedGupyJob[]> {
     const json = await response.json();
     const rawJobs: GupyRawJob[] = json.data || [];
 
-    console.log(`[GupyProvider] ${rawJobs.length} vagas de Teresina encontradas no Portal Gupy.`);
-    return rawJobs.map(convertGupyJob);
+    const seenIds = new Set<string>();
+    const seenUrls = new Set<string>();
+    const uniqueJobs: ConvertedGupyJob[] = [];
+
+    for (const raw of rawJobs) {
+      // Filtragem estrita: Teresina ou Remoto
+      const isTeresina = (raw.city && raw.city.toLowerCase() === 'teresina') || (!raw.city && raw.state && raw.state.toLowerCase() === 'piauí');
+      const isRemote = raw.workplaceType === 'remote';
+      if (!isTeresina && !isRemote) {
+        continue;
+      }
+
+      const converted = convertGupyJob(raw);
+      
+      // Previne qualquer duplicação por ID ou URL oficial
+      if (seenIds.has(converted.id)) continue;
+      if (converted.applicationUrl && seenUrls.has(converted.applicationUrl)) continue;
+
+      seenIds.add(converted.id);
+      if (converted.applicationUrl) seenUrls.add(converted.applicationUrl);
+
+      uniqueJobs.push(converted);
+    }
+
+    console.log(`[GupyProvider] ${uniqueJobs.length} vagas de Teresina/Remoto validadas do Portal Gupy.`);
+    return uniqueJobs;
   } catch (err: any) {
     console.error('[GupyProvider] Erro ao buscar vagas do Gupy:', err.message);
     return [];
@@ -238,7 +324,7 @@ export async function syncGupyJobs() {
     for (const job of jobs) {
       try {
         const docRef = doc(colRef, job.id);
-        await setDoc(docRef, { ...job, updatedAt: Date.now() }, { merge: true });
+        await setDoc(docRef, { ...job, _syncedAt: Date.now() }, { merge: true });
         savedCount++;
       } catch (err) {
         console.error(`Erro ao salvar vaga Gupy ${job.id} no Firestore:`, err);

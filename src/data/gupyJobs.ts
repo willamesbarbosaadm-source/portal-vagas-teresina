@@ -1,8 +1,12 @@
 import { Job } from '../types';
 
 /**
- * 50 Vagas Reais e Recentes extraídas diretamente do Portal Gupy (Teresina - PI)
- * Atualizadas com cargos reais de empresas como McDonald's, Solar Coca-Cola, Youcom, Centauro, Aegea, Alvoar e outras!
+ * CLASSIFICAÇÃO: [DEMONSTRAÇÃO / HISTÓRICO - NÃO_UTILIZADO NO CATÁLOGO ATIVO]
+ * 
+ * Este arquivo foi preservado conforme regra 16 do projeto (não deletar sem autorização expressa).
+ * As vagas ativas do Gupy agora são consumidas 100% de forma dinâmica e verificada
+ * diretamente da API oficial da Gupy (server/gupyProvider.ts e /api/gupy/jobs) e do Firestore,
+ * garantindo datas e links originais e prevenindo datas artificiais.
  */
 export const GUPY_LIVE_JOBS: Job[] = [
   {

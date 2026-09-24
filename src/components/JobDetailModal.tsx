@@ -323,10 +323,10 @@ ${window.location.origin}?vaga=${job.id}`;
 
         </div>
 
-        {/* Modal Footer (Candidatura Direta - ZERO links externos para Themos Vagas) */}
+        {/* Modal Footer */}
         <div className="p-5 sm:p-6 bg-zinc-950 border-t border-zinc-800/90 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-xs text-zinc-400 text-center sm:text-left">
-            <span className="font-extrabold text-amber-400">Portal VAI DÁ CERTO</span> • {job.postedAt}
+            <span className="font-extrabold text-amber-400">{job.source === 'Gupy' ? 'Fonte: Gupy' : 'Portal VAI DÁ CERTO'}</span> • {job.postedAt}
             {job.contactEmail && (
               <span className="block text-zinc-400 font-mono text-[11px] mt-0.5">
                 E-mail de Contato: {job.contactEmail}
@@ -398,10 +398,14 @@ ${window.location.origin}?vaga=${job.id}`;
                 href={job.applicationUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white shadow-md active:scale-95 transition-all bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500"
+                className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white shadow-md active:scale-95 transition-all ${
+                  job.source === 'Gupy'
+                    ? 'bg-blue-600 hover:bg-blue-500'
+                    : 'bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500'
+                }`}
               >
                 <ExternalLink className="w-4 h-4" />
-                <span>Link de Cadastro Oficial</span>
+                <span>{job.source === 'Gupy' ? 'Acessar Vaga no Gupy (Oficial)' : 'Link de Cadastro Oficial'}</span>
               </a>
             )}
           </div>

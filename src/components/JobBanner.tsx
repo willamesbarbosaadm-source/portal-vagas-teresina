@@ -523,7 +523,7 @@ ${job.whatsapp ? `📱 WhatsApp: ${job.whatsapp}` : ''}
                         : 'bg-[#c6893f] text-slate-950 hover:bg-[#b57a32]'
                     }`}
                   >
-                    <span>{job.source === 'Talentbrand' ? 'Acessar no Talentbrand' : 'Acessar Vaga'}</span>
+                    <span>{job.source === 'Talentbrand' ? 'Acessar no Talentbrand' : job.source === 'Gupy' ? 'Acessar Vaga no Gupy' : 'Acessar Vaga'}</span>
                     <ExternalLink className="w-4 h-4" />
                   </a>
                 </div>

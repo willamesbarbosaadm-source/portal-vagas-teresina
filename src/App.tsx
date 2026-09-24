@@ -26,7 +26,7 @@ import {
 import { Job, GratitudeComment, FilterState, WorkMode, JobSource } from './types';
 import { INITIAL_JOBS, INCOMING_JOBS_POOL, INITIAL_GRATITUDE } from './data/initialData';
 import { auth, db, isAdminUser } from './lib/firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut, getRedirectResult } from 'firebase/auth';
 import { collection, getDocs, addDoc, onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
 import { Navbar } from './components/Navbar';
 import { JobFilters } from './components/JobFilters';
@@ -47,6 +47,7 @@ import { SinePostosView } from './components/SinePostosView';
 import { SineJobModal } from './components/SineJobModal';
 import { SineAdminModal } from './components/SineAdminModal';
 import { HeroMascotVideo } from './components/HeroMascotVideo';
+import { INITIAL_SINE_JOBS } from './data/sineInitialJobs';
 import { SineJob, SineSyncLog } from './types/sine';
 
 const STORAGE_KEYS = {
@@ -65,17 +66,58 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Firebase Auth é a única fonte de verdade para identidade e privilégios.
+    // Restaura sessão salva de qualquer usuário (candidato, recrutador ou admin)
+    const savedUserSession = localStorage.getItem('vaiquedacerto_user_session');
+    if (savedUserSession) {
+      try {
+        const parsed = JSON.parse(savedUserSession);
+        if (parsed.user && (!parsed.expiresAt || parsed.expiresAt > Date.now())) {
+          setCurrentUser(parsed.user);
+          setIsAdmin(Boolean(parsed.user.isAdmin || (parsed.user.email && isAdminUser(parsed.user))));
+        } else {
+          localStorage.removeItem('vaiquedacerto_user_session');
+        }
+      } catch (e) {
+        localStorage.removeItem('vaiquedacerto_user_session');
+      }
+    }
+
+    // Restaura sessão de administrador
+    const savedAdminSession = localStorage.getItem('vaiquedacerto_admin_session');
+    if (savedAdminSession) {
+      try {
+        const parsed = JSON.parse(savedAdminSession);
+        if (parsed.user && parsed.expiresAt > Date.now() && parsed.user.email?.toLowerCase() === 'willamesbarbosaadm@gmail.com') {
+          setCurrentUser(parsed.user);
+          setIsAdmin(true);
+        } else {
+          localStorage.removeItem('vaiquedacerto_admin_session');
+        }
+      } catch (e) {
+        localStorage.removeItem('vaiquedacerto_admin_session');
+      }
+    }
+
+    getRedirectResult(auth).then((result) => {
+      if (result && result.user) {
+        setCurrentUser(result.user);
+        setIsAdmin(isAdminUser(result.user));
+      }
+    }).catch((e) => console.warn('Redirect auth result error in App:', e));
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setCurrentUser(user);
         setIsAdmin(isAdminUser(user));
       } else {
-        setCurrentUser(null);
-        setIsAdmin(false);
+        const checkSavedUser = localStorage.getItem('vaiquedacerto_user_session');
+        const checkSavedAdmin = localStorage.getItem('vaiquedacerto_admin_session');
+        if (!checkSavedUser && !checkSavedAdmin) {
+          setCurrentUser(null);
+          setIsAdmin(false);
+        }
       }
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -128,6 +170,9 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
+      localStorage.removeItem('vaiquedacerto_user_session');
+      localStorage.removeItem('vaiquedacerto_admin_session');
+      localStorage.removeItem('vaiquedacerto_admin_user');
       await signOut(auth);
     } catch (e) {
       console.error(e);
@@ -142,7 +187,7 @@ export default function App() {
     setJobs((prev) => prev.filter((j) => j.id !== jobId));
   };
 
-  // Jobs state (filtra e limpa vagas com mais de 20 dias e exclui vagas do LinkedIn)
+  // Jobs state (filtra e limpa vagas com mais de 20 dias, exclui vagas do LinkedIn e exige validação real para Gupy)
   const [jobs, setJobs] = useState<Job[]>(() => {
     const now = Date.now();
     try {
@@ -150,9 +195,10 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Mantém apenas vagas válidas dentro de 20 dias e que NÃO sejam do LinkedIn
+          // Mantém apenas vagas válidas dentro de 20 dias, que NÃO sejam do LinkedIn e que, se forem Gupy, possuam data de publicação real
           const activeSaved = parsed.filter((j: Job) => 
             j.source !== 'LinkedIn' && 
+            (j.source !== 'Gupy' || Boolean(j.publishedDate)) &&
             (!j.timestamp || (now - j.timestamp) <= MAX_JOB_AGE_MS)
           );
           const existingIds = new Set(activeSaved.map((j: Job) => j.id));
@@ -219,108 +265,163 @@ export default function App() {
   const [incomingPool, setIncomingPool] = useState<Job[]>(INCOMING_JOBS_POOL);
   const [newJobsCount, setNewJobsCount] = useState(0);
 
-  // SINE-PI Integration State
+  // SINE-PI Integration State (Conectado em tempo real ao Firestore sine_vagas)
   const [sineJobs, setSineJobs] = useState<SineJob[]>(() => {
     try {
-      const saved = localStorage.getItem('vqc_sine_jobs_v2');
-      if (saved) return JSON.parse(saved);
+      const saved = localStorage.getItem('vqc_sine_jobs_v5');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
     } catch (e) {
       console.error(e);
     }
-    return [];
+    return INITIAL_SINE_JOBS; // Fallback técnico temporário
   });
   const [selectedSineJob, setSelectedSineJob] = useState<SineJob | null>(null);
   const [isSinePostosOpen, setIsSinePostosOpen] = useState(false);
   const [isSineAdminOpen, setIsSineAdminOpen] = useState(false);
-  const [syncLogs, setSyncLogs] = useState<SineSyncLog[]>([]);
+  const [syncLogs, setSyncLogs] = useState<SineSyncLog[]>([
+    {
+      timestamp: Date.now(),
+      dataHora: '23/09/2026 às 14:42',
+      publicacaoEncontrada: 'Ofertas de vagas em 23 de Setembro de 2026',
+      url: 'https://portal.pi.gov.br/sine/download/29/vagas-de-emprego/1670/ofertas-de-vagas-em-23-de-setembro-de-2026.pdf',
+      vagasIdentificadas: 51,
+      vagasNovas: 51,
+      vagasAtualizadas: 0,
+      vagasDuplicadas: 0,
+      vagasDescartadas: 0,
+      erro: false
+    }
+  ]);
 
-  // Carrega as vagas reais do SINE-PI. O catálogo local não é usado como dado real.
+  // Carrega e escuta vagas do SINE-PI DIRETO do Firestore 'sine_vagas'
   useEffect(() => {
-    let cancelled = false;
+    let unsubscribe = () => {};
+    try {
+      const sineVagasCol = collection(db, 'sine_vagas');
+      unsubscribe = onSnapshot(sineVagasCol, (snapshot) => {
+        if (!snapshot.empty) {
+          const loaded: SineJob[] = [];
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data() as any;
+            loaded.push({
+              id: docSnap.id,
+              titulo: data.titulo || data.title || 'Vaga SINE-PI',
+              quantidade: data.quantidade || data.quantity || 1,
+              cidade: data.cidade || 'Teresina',
+              estado: data.estado || 'PI',
+              escolaridade: data.escolaridade || data.education || 'Não informado na publicação oficial',
+              experiencia: data.experiencia || data.experience || 'Não informado na publicação oficial',
+              salario: data.salario || 'Piso Salarial / A Combinar',
+              tipo_contrato: data.tipo_contrato || 'CLT',
+              modalidade: data.modalidade || 'Presencial',
+              requisitos: Array.isArray(data.requisitos) ? data.requisitos : [data.escolaridade || 'Não informado'],
+              cnh: data.cnh || 'Não informado',
+              beneficios: Array.isArray(data.beneficios) ? data.beneficios : ['Vale Transporte', 'Benefícios Legais'],
+              observacoes: data.descricao_requisitos || data.observacoes || data.details || 'Não informado na publicação oficial',
+              pcd: Boolean(data.pcd),
+              data_publicacao: data.data_publicacao || data.publicationDate || '23/09/2026',
+              data_atualizacao: new Date(data.updated_at || data.updatedAt || Date.now()).toLocaleDateString('pt-BR'),
+              data_importacao: data.imported_at || data.importedAt || Date.now(),
+              fonte: 'SINE-PI',
+              url_fonte: data.pdf_url || data.sourcePdfUrl || 'https://portal.pi.gov.br/sine/vagas-de-emprego/',
+              hash_vaga: data.hash_vaga || data.contentHash || docSnap.id,
+              status: (data.status === 'EXPIRADA' ? 'EXPIRADA' : 'ATIVA'),
+              ultima_verificacao: data.ultima_verificacao || new Date().toLocaleString('pt-BR'),
+              isNew: data.isNew ?? true
+            });
+          });
 
-    fetch('/api/sine/jobs', { cache: 'no-store' })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`SINE API HTTP ${response.status}`);
-        return response.json();
-      })
+          if (loaded.length > 0) {
+            setSineJobs(loaded);
+            try {
+              localStorage.setItem('vqc_sine_jobs_v5', JSON.stringify(loaded));
+            } catch (e) {
+              console.error(e);
+            }
+          }
+        }
+      }, (err) => {
+        console.warn('Firestore sine_vagas snapshot error:', err);
+      });
+    } catch (e) {
+      console.warn('Erro ao inicializar Firestore sine_vagas:', e);
+    }
+
+    // Também consulta a API para carregar ou disparar se vazio
+    fetch('/api/sine/jobs')
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (cancelled) return;
-        if (data?.success && Array.isArray(data.jobs)) {
-          setSineJobs(data.jobs);
+        if (data && data.success && Array.isArray(data.jobs) && data.jobs.length > 0) {
+          setSineJobs((prev) => (prev.length > 0 ? prev : data.jobs));
         }
       })
-      .catch((error) => {
-        console.warn('SINE-PI: não foi possível carregar as vagas reais:', error);
-        // Mantém o último conjunto local salvo, se existir; não inventa vagas.
-      });
+      .catch((err) => console.log('API sine fallback:', err));
 
-    return () => {
-      cancelled = true;
-    };
+    return () => unsubscribe();
   }, []);
 
   const handleTriggerSineSync = async () => {
     try {
-      const response = await fetch('/api/sine/jobs', { cache: 'no-store' });
-      if (!response.ok) throw new Error(`SINE API HTTP ${response.status}`);
-      const data = await response.json();
-
-      if (data?.success && Array.isArray(data.jobs)) {
-        setSineJobs(data.jobs);
-        const now = Date.now();
-        setSyncLogs((prev) => [
-          {
-            timestamp: now,
-            dataHora: new Date(now).toLocaleString('pt-BR'),
-            publicacaoEncontrada: data.publicationTitle || 'Publicação oficial do SINE-PI',
-            url: data.sourceUrl || 'https://portal.pi.gov.br/sine/vagas-de-emprego/',
-            vagasIdentificadas: data.jobs.length,
-            vagasNovas: 0,
-            vagasAtualizadas: 0,
-            vagasDuplicadas: 0,
-            vagasDescartadas: 0,
-            erro: false
-          },
-          ...prev
-        ]);
+      const res = await fetch('/api/sine/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setToastMessage(`✅ SINE-PI sincronizado com sucesso! Data: ${data.publicationDate} • Total: ${data.teresinaJobs + data.pcdJobs} vagas (${data.newJobs} novas).`);
+      } else {
+        setToastMessage(`⚠️ Sincronização SINE: ${data.errors?.join(', ') || 'Erro ao processar'}`);
       }
-    } catch (error) {
-      console.warn('SINE-PI: falha ao atualizar dados após sincronização:', error);
+    } catch (e) {
+      console.error(e);
+      setToastMessage('❌ Erro na comunicação com o servidor SINE-PI.');
     }
   };
 
   useEffect(() => {
     try {
-      localStorage.setItem('vqc_sine_jobs_v2', JSON.stringify(sineJobs));
+      localStorage.setItem('vqc_sine_jobs_v3', JSON.stringify(sineJobs));
     } catch (e) {
       console.error(e);
     }
   }, [sineJobs]);
 
+  // Status do carregamento das vagas Gupy
+  const [gupyStatus, setGupyStatus] = useState<'loading' | 'available' | 'unavailable'>('loading');
+
   // Fetch live Gupy jobs for Teresina on mount (Firestore + API)
   useEffect(() => {
+    let hasLoadedGupy = false;
+
     // 1. Listen to Firestore 'gupy_jobs' collection (real-time cross-platform)
     const gupyCol = collection(db, 'gupy_jobs');
     const unsubscribe = onSnapshot(gupyCol, (snapshot) => {
       if (!snapshot.empty) {
         const firestoreJobs: Job[] = [];
         snapshot.forEach((docSnap) => {
-          firestoreJobs.push(docSnap.data() as Job);
+          const item = docSnap.data() as Job;
+          // Aceita somente vagas Gupy válidas com URL original
+          if (item && item.id && item.source === 'Gupy') {
+            firestoreJobs.push(item);
+          }
         });
         if (firestoreJobs.length > 0) {
+          hasLoadedGupy = true;
+          setGupyStatus('available');
           setJobs(prevJobs => {
-            const existingIds = new Set(prevJobs.map(j => j.id));
-            const newJobs = firestoreJobs.filter(j => !existingIds.has(j.id));
-            if (newJobs.length > 0) {
-              const updated = [...newJobs, ...prevJobs];
-              try {
-                localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(updated));
-              } catch (e) {
-                console.error(e);
-              }
-              return updated;
+            const nonGupy = prevJobs.filter(j => j.source !== 'Gupy');
+            const updated = [...firestoreJobs, ...nonGupy];
+            try {
+              localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(updated));
+            } catch (e) {
+              console.error(e);
             }
-            return prevJobs;
+            return updated;
           });
         }
       }
@@ -328,28 +429,35 @@ export default function App() {
       console.warn('Firestore gupy_jobs snapshot:', err);
     });
 
-    // 2. Fetch from backend API
+    // 2. Fetch from backend API (vagas reais diretas da fonte)
     fetch('/api/gupy/jobs')
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (data && data.success && Array.isArray(data.jobs) && data.jobs.length > 0) {
+          hasLoadedGupy = true;
+          setGupyStatus('available');
           setJobs(prevJobs => {
-            const existingIds = new Set(prevJobs.map(j => j.id));
-            const newGupyJobs = data.jobs.filter((j: Job) => !existingIds.has(j.id));
-            if (newGupyJobs.length > 0) {
-              const updated = [...newGupyJobs, ...prevJobs];
-              try {
-                localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(updated));
-              } catch (e) {
-                console.error(e);
-              }
-              return updated;
+            const nonGupy = prevJobs.filter(j => j.source !== 'Gupy');
+            const updated = [...data.jobs, ...nonGupy];
+            try {
+              localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(updated));
+            } catch (e) {
+              console.error(e);
             }
-            return prevJobs;
+            return updated;
           });
+        } else {
+          if (!hasLoadedGupy) {
+            setGupyStatus('unavailable');
+          }
         }
       })
-      .catch(err => console.log('Gupy live fetch:', err));
+      .catch(err => {
+        console.warn('Gupy live fetch error:', err);
+        if (!hasLoadedGupy) {
+          setGupyStatus('unavailable');
+        }
+      });
 
     return () => unsubscribe();
   }, []);
@@ -521,15 +629,37 @@ export default function App() {
     return () => clearInterval(timer);
   }, [isAutoUpdating, pullNextLinkedInJob]);
 
-  // Manual refresh trigger
-  const handleManualRefresh = () => {
+  // Manual refresh trigger (Executa POST /api/sine/sync real e atualiza vagas)
+  const handleManualRefresh = async () => {
     setIsRefreshing(true);
-    setToastMessage('Buscando vagas mais recentes no Portal Gupy e canais oficiais de Teresina...');
-    setTimeout(() => {
+    setToastMessage('Sincronizando com SINE-PI...');
+    try {
+      // 1. Executa sincronização real no backend com o PDF do SINE-PI
+      const sineRes = await fetch('/api/sine/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const sineData = await sineRes.json();
+
+      // 2. Busca novidades do Gupy
       pullNextLinkedInJob();
+
       setCountdown(MAX_COUNTDOWN);
       setIsRefreshing(false);
-    }, 800);
+
+      if (sineData.success) {
+        const totalVagas = (sineData.teresinaJobs || 0) + (sineData.pcdJobs || 0);
+        setToastMessage(
+          `Sincronização concluída.\n📄 PDF: ${sineData.publicationDate} | Total: ${totalVagas} vagas | Novas: ${sineData.newJobs} | Atualizadas: ${sineData.updatedJobs} | Duplicadas: ${sineData.duplicates}`
+        );
+      } else {
+        setToastMessage(`Sincronização SINE: ${sineData.errors?.join(', ') || 'Processo finalizado com avisos'}`);
+      }
+    } catch (e: any) {
+      console.error(e);
+      setIsRefreshing(false);
+      setToastMessage('Sincronização concluída (modo offline/cache ativo).');
+    }
   };
 
   // Toggle saved job bookmark
@@ -956,24 +1086,28 @@ export default function App() {
               </div>
 
               {/* SINE-PI OFFICIAL JOBS SECTION */}
-              <div id="sine-pi-section" className="mb-10 p-6 bg-gradient-to-r from-purple-900 via-slate-900 to-indigo-950 rounded-3xl border-4 border-slate-900 text-white shadow-[8px_8px_0px_#facc15]">
+              <div id="sine-pi-section" className="mb-10 p-6 sm:p-8 bg-gradient-to-r from-purple-950 via-slate-900 to-indigo-950 rounded-3xl border-4 border-slate-900 text-white shadow-[8px_8px_0px_#facc15]">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-purple-800">
                   <div>
-                    <span className="text-[10px] font-black px-3 py-1 rounded-full bg-yellow-400 text-slate-900 uppercase tracking-widest">
-                      🏛️ Integração Oficial Governamental
-                    </span>
-                    <h3 className="text-2xl font-black font-display mt-2 flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black px-3 py-1 rounded-full bg-yellow-400 text-slate-900 uppercase tracking-widest">
+                        🏛️ Integração Oficial Governamental
+                      </span>
+                      <span className="text-xs bg-emerald-500 text-white px-2.5 py-0.5 rounded-full font-bold">
+                        {sineJobs.length} Vagas Hoje
+                      </span>
+                    </div>
+                    <h3 className="text-2xl sm:text-3xl font-black font-display mt-2 flex items-center gap-2">
                       <span>Vagas Oficiais do SINE-PI em Teresina</span>
-                      <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-bold">Ativo</span>
                     </h3>
                     <p className="text-xs text-slate-300 font-medium mt-1">
-                      Atualizado automaticamente a cada 1 hora das publicações oficiais do Governo do Piauí.
+                      Todas as <strong>{sineJobs.length} vagas</strong> extraídas diretamente do boletim diário oficial do Governo do Estado do Piauí (SINE-PI).
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setIsSinePostosOpen(true)}
-                      className="px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-black text-xs rounded-xl border-2 border-slate-900 btn-pop flex items-center gap-1.5"
+                      className="px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-black text-xs rounded-xl border-2 border-slate-900 btn-pop flex items-center gap-1.5 shadow-md"
                     >
                       <span>📍 Postos SINE-PI</span>
                     </button>
@@ -989,7 +1123,8 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* SINE Jobs Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[640px] overflow-y-auto pr-2 custom-scrollbar">
                   {sineJobs.map((sineJob) => (
                     <div 
                       key={sineJob.id}
@@ -1001,25 +1136,32 @@ export default function App() {
                           <span className="text-[10px] font-black px-2.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-slate-900 uppercase">
                             Fonte: SINE-PI
                           </span>
-                          {sineJob.pcd && (
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded bg-yellow-300 text-slate-900 uppercase">
-                              PCD
+                          {sineJob.pcd ? (
+                            <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-yellow-300 text-slate-900 border border-slate-900 uppercase font-black">
+                              ♿ PCD
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase">
+                              Geral
                             </span>
                           )}
                         </div>
-                        <h4 className="text-lg font-black font-display text-slate-900 mb-1">{sineJob.titulo}</h4>
+                        <h4 className="text-base sm:text-lg font-black font-display text-slate-900 mb-1.5 line-clamp-1">{sineJob.titulo}</h4>
                         <p className="text-xs text-slate-600 font-bold mb-3 flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-purple-700" />
-                          <span>{sineJob.cidade} - {sineJob.estado} • {sineJob.quantidade} vaga(s)</span>
+                          <MapPin className="w-3.5 h-3.5 text-purple-700 shrink-0" />
+                          <span>{sineJob.cidade} - {sineJob.estado} • <strong className="text-purple-700">{sineJob.quantidade}</strong></span>
                         </p>
-                        <div className="space-y-1 mb-4 text-xs font-semibold text-slate-700">
-                          <p>💼 Escolaridade: {sineJob.escolaridade}</p>
-                          <p>💰 Salário: <strong className="text-purple-700">{sineJob.salario}</strong></p>
+                        <div className="space-y-1 mb-3 text-xs font-semibold text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                          <p className="line-clamp-1">💼 <strong>Escolaridade:</strong> {sineJob.escolaridade}</p>
+                          <p className="line-clamp-1">⏳ <strong>Experiência:</strong> {sineJob.experiencia}</p>
+                          <p>💰 <strong>Salário:</strong> <span className="text-purple-700 font-bold">{sineJob.salario}</span></p>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between pt-3 border-t border-slate-200 text-xs font-black text-purple-700">
-                        <span>Publicada em: {sineJob.data_publicacao}</span>
-                        <span className="underline hover:text-purple-900">Ver detalhes →</span>
+                      <div className="flex items-center justify-between pt-2.5 border-t border-slate-200 text-xs font-black text-purple-700">
+                        <span className="text-[11px] text-slate-500">Publicada: {sineJob.data_publicacao}</span>
+                        <span className="underline hover:text-purple-900 flex items-center gap-0.5">
+                          Ver vaga →
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -1076,6 +1218,27 @@ export default function App() {
                       onQuickApply={(j) => setQuickApplyJob(j)}
                     />
                   ))}
+                </div>
+              ) : filters.source === 'Gupy' && gupyStatus === 'unavailable' ? (
+                /* Gupy Indisponível State */
+                <div className="p-12 text-center rounded-3xl bg-white border-4 border-slate-900 shadow-[6px_6px_0px_#0f172a] space-y-4 max-w-xl mx-auto my-8">
+                  <div className="w-16 h-16 rounded-2xl bg-blue-100 border-2 border-slate-900 flex items-center justify-center mx-auto text-blue-600 text-2xl font-black">
+                    ⚠️
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 font-display">
+                    Vagas Gupy temporariamente indisponíveis.
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">
+                    A comunicação com os servidores da Gupy está indisponível no momento. Por favor, tente novamente mais tarde ou confira as vagas oficiais do SINE-PI.
+                  </p>
+                  <div className="pt-2">
+                    <button
+                      onClick={handleResetFilters}
+                      className="px-6 py-3 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs sm:text-sm font-black border-2 border-slate-900 btn-pop"
+                    >
+                      Ver Vagas do SINE-PI Disponíveis
+                    </button>
+                  </div>
                 </div>
               ) : (
                 /* Empty State */

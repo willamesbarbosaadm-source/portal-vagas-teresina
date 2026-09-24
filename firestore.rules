@@ -1,8 +1,98 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == 'willamesbarbosaadm@gmail.com' ||
+        (request.auth.token.keys().hasAll(['admin']) && request.auth.token.admin == true) ||
+        (request.auth.token.keys().hasAll(['isAdmin']) && request.auth.token.isAdmin == true)
+      );
+    }
+
+    // 1. SINE-PI Vagas Oficiais
+    match /sine_vagas/{vagaId} {
+      // Leitura pública irrestrita para candidatos e visitantes
+      allow read: if true;
+      // Escrita restrita a administradores autenticados ou backend
+      allow write: if isAdmin();
+    }
+
+    // 2. Logs de Sincronização SINE-PI
+    match /sine_sync_logs/{logId} {
+      // Leitura pública de logs para painel de transparência
+      allow read: if true;
+      // Escrita restrita a administradores autenticados ou backend
+      allow write: if isAdmin();
+    }
+
+    // 3. Vagas Gupy & Themos Vagas
+    match /gupy_jobs/{jobId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /themos_vagas/{jobId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 4. Usuários e Perfis
+    match /users/{userId} {
+      // Usuário pode ler apenas seu próprio perfil; Admin pode visualizar
+      allow read: if isOwner(userId) || isAdmin();
+
+      // Criação de perfil no cadastro / login
+      allow create: if isOwner(userId) && (
+        isAdmin() || 
+        !request.resource.data.keys().hasAny(['isAdmin', 'admin', 'role', 'permissions', 'tipo']) ||
+        request.resource.data.isAdmin == false
+      );
+
+      // Atualização de perfil: impede que usuário comum altere campos de privilégio administrativo
+      allow update: if isAdmin() || (
+        isOwner(userId) &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin', 'admin', 'role', 'permissions', 'tipo'])
+      );
+
+      // Exclusão permitida apenas por administradores
+      allow delete: if isAdmin();
+    }
+
+    // 5. Analytics & Estatísticas do Portal
+    match /analytics/{docId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAdmin();
+    }
+
+    // 6. Coleções complementares (Vagas de recrutadores e Mural)
+    match /jobs/{jobId} {
+      allow read: if true;
+      allow create: if isAuthenticated() || isAdmin();
+      allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+
+    match /gratitude_comments/{commentId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+
+    // Bloqueio padrão para qualquer outra coleção não prevista
     match /{document=**} {
-      allow read, write: if true;
+      allow read: if false;
+      allow write: if false;
     }
   }
 }
+

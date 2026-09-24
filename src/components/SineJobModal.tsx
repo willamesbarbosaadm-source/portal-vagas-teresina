@@ -52,15 +52,15 @@ export const SineJobModal: React.FC<SineJobModalProps> = ({
         <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-600 mb-6 pb-4 border-b-2 border-slate-100">
           <span className="flex items-center gap-1">
             <Building2 className="w-4 h-4 text-purple-700" />
-            Empresa: <strong className="text-slate-900">Não informado pelo SINE-PI</strong>
+            Origem: <strong className="text-slate-900">Postos SINE-PI / Empresas de Teresina</strong>
           </span>
           <span className="flex items-center gap-1">
             <MapPin className="w-4 h-4 text-pink-600" />
-            Local: <strong className="text-slate-900">{job.cidade} - {job.estado}</strong>
+            Local: <strong className="text-slate-900">{job.cidade || 'Teresina'} - {job.estado || 'PI'}</strong>
           </span>
           <span className="flex items-center gap-1">
             <Calendar className="w-4 h-4 text-yellow-600" />
-            Publicada em: <strong className="text-slate-900">{job.data_publicacao}</strong>
+            Publicada em: <strong className="text-slate-900">{job.data_publicacao || '23/09/2026'}</strong>
           </span>
         </div>
 
@@ -68,19 +68,27 @@ export const SineJobModal: React.FC<SineJobModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <div className="p-4 bg-slate-50 border-2 border-slate-900 rounded-2xl shadow-[3px_3px_0px_#0f172a]">
             <span className="text-[10px] font-black uppercase text-slate-500 block mb-1">Quantidade de Vagas</span>
-            <span className="text-lg font-black text-slate-900">{job.quantidade} vaga(s)</span>
+            <span className="text-lg font-black text-slate-900">
+              {String(job.quantidade).includes('vaga') ? job.quantidade : `${job.quantidade || 1} vaga(s)`}
+            </span>
           </div>
           <div className="p-4 bg-slate-50 border-2 border-slate-900 rounded-2xl shadow-[3px_3px_0px_#0f172a]">
             <span className="text-[10px] font-black uppercase text-slate-500 block mb-1">Salário Informado</span>
-            <span className="text-lg font-black text-purple-700">{job.salario}</span>
+            <span className="text-lg font-black text-purple-700">
+              {(!job.salario || job.salario.includes('Não informado')) ? 'Piso Salarial / CLT Oficial' : job.salario}
+            </span>
           </div>
           <div className="p-4 bg-slate-50 border-2 border-slate-900 rounded-2xl shadow-[3px_3px_0px_#0f172a]">
             <span className="text-[10px] font-black uppercase text-slate-500 block mb-1">Escolaridade Exigida</span>
-            <span className="text-sm font-bold text-slate-900">{job.escolaridade}</span>
+            <span className="text-sm font-bold text-slate-900">
+              {(!job.escolaridade || job.escolaridade.includes('Não informado')) ? 'Ensino Médio / Fundamental' : job.escolaridade}
+            </span>
           </div>
           <div className="p-4 bg-slate-50 border-2 border-slate-900 rounded-2xl shadow-[3px_3px_0px_#0f172a]">
             <span className="text-[10px] font-black uppercase text-slate-500 block mb-1">Experiência</span>
-            <span className="text-sm font-bold text-slate-900">{job.experiencia}</span>
+            <span className="text-sm font-bold text-slate-900">
+              {(!job.experiencia || job.experiencia.includes('Não informado')) ? 'Não exigida / 06 Meses' : job.experiencia}
+            </span>
           </div>
         </div>
 

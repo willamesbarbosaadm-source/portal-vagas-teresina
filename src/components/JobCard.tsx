@@ -111,7 +111,7 @@ export const JobCard: React.FC<JobCardProps> = ({
           {job.source === 'Gupy' && (
             <span className="px-2.5 py-0.5 rounded-lg bg-blue-100 border border-blue-400 text-blue-950 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
-              💙 Portal Gupy Oficial
+              Fonte: Gupy Oficial
             </span>
           )}
           {job.source === 'LinkedIn' && (
@@ -129,6 +129,12 @@ export const JobCard: React.FC<JobCardProps> = ({
           {job.source === 'Themos Vagas' && (
             <span className="px-2.5 py-0.5 rounded-lg bg-yellow-100 border border-yellow-300 text-yellow-900 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
               ⭐ Selo VAI DÁ CERTO
+            </span>
+          )}
+          {job.source === 'SINE-PI' && (
+            <span className="px-2.5 py-0.5 rounded-lg bg-purple-100 border border-purple-400 text-purple-900 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse" />
+              🏛️ SINE-PI Oficial
             </span>
           )}
           {job.isNew && (
@@ -243,7 +249,7 @@ export const JobCard: React.FC<JobCardProps> = ({
             }}
             className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white font-black text-xs sm:text-sm rounded-xl border-2 border-slate-900 btn-pop flex items-center gap-1.5 shadow-sm"
           >
-            <span>Candidatar-se 🔥</span>
+            <span>{job.source === 'Gupy' ? 'Ver Vaga' : 'Candidatar-se 🔥'}</span>
           </button>
         </div>
       </div>
