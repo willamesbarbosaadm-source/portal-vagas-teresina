@@ -51,10 +51,12 @@ export function useSupabaseAuth() {
   const signUp = useCallback(async (credentials: SignUpCredentials) => {
     setLoading(true);
     try {
-      const authUser = await supabaseAuth.signUp(credentials);
-      setUser(authUser);
-      setIsAdmin(Boolean(authUser.isAdmin));
-      return authUser;
+      const result = await supabaseAuth.signUp(credentials);
+      if (result.user && result.session) {
+        setUser(result.user);
+        setIsAdmin(Boolean(result.user.isAdmin));
+      }
+      return result;
     } finally {
       setLoading(false);
     }

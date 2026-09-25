@@ -87,24 +87,46 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       setLoading(true);
       try {
-        const authUser = await supabaseAuth.signUp({
+        const result = await supabaseAuth.signUp({
           name: cleanName,
           email: cleanEmail,
           password: cleanPass
         });
 
-        if (onLoginSuccess) onLoginSuccess(authUser);
-        onShowToast(`🚀 Conta criada com sucesso! Bem-vindo(a), ${authUser.displayName || cleanName}!`);
-        onClose();
+        if (result.needsEmailConfirmation) {
+          setSuccessMessage(
+            `Cadastro realizado com sucesso! Enviamos um link de confirmação para ${cleanEmail}. Por favor, verifique sua caixa de entrada (ou pasta de spam) para confirmar sua conta antes de fazer login.`
+          );
+          setMode('login');
+          setPassword('');
+          setConfirmPassword('');
+          onShowToast(`📧 E-mail de confirmação enviado para ${cleanEmail}!`);
+        } else {
+          if (onLoginSuccess && result.user) onLoginSuccess(result.user);
+          onShowToast(`🚀 Conta criada com sucesso! Bem-vindo(a), ${result.user?.displayName || cleanName}!`);
+          onClose();
+        }
       } catch (err: any) {
-        console.error('Supabase SignUp error:', err);
+        console.warn('[AuthModal Diagnostic] Supabase SignUp error:', {
+          status: err?.status,
+          message: err?.message,
+          originalMessage: err?.originalMessage
+        });
         let msg = err.message || 'Erro ao criar conta. Tente novamente.';
-        if (msg.includes('User already registered') || msg.includes('already registered')) {
+        if (
+          msg.includes('Error sending confirmation email') ||
+          msg.includes('error sending confirmation email') ||
+          msg.includes('Não foi possível enviar o e-mail de confirmação')
+        ) {
+          msg = 'Não foi possível enviar o e-mail de confirmação. Verifique a configuração de e-mail do Supabase e tente novamente.';
+        } else if (msg.includes('User already registered') || msg.includes('already registered')) {
           msg = 'Este e-mail já está cadastrado. Clique em "Fazer login" para entrar ou recupere sua senha.';
         } else if (msg.includes('Password should be at least')) {
           msg = 'A senha deve conter no mínimo 6 caracteres.';
-        } else if (msg.includes('valid email')) {
-          msg = 'Por favor, informe um e-mail válido.';
+        } else if (msg.includes('valid email') || msg.includes('invalid email')) {
+          msg = 'Por favor, informe um endereço de e-mail válido.';
+        } else if (msg.includes('rate limit')) {
+          msg = 'Limite temporário de envio de e-mails atingido. Aguarde alguns instantes e tente novamente.';
         }
         setError(msg);
       } finally {
@@ -163,9 +185,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setSuccessMessage(`Enviamos um link de recuperação para ${cleanEmail}. Verifique sua caixa de entrada e spam para redefinir sua senha.`);
         onShowToast(`📧 Link de recuperação enviado para ${cleanEmail}!`);
       } catch (err: any) {
-        console.error('Supabase ResetPassword error:', err);
+        console.warn('[AuthModal Diagnostic] Supabase ResetPassword error:', {
+          message: err?.message,
+          status: err?.status
+        });
         let msg = err.message || 'Erro ao enviar e-mail de recuperação.';
-        if (msg.includes('rate limit')) {
+        if (
+          msg.includes('Error sending') ||
+          msg.includes('error sending') ||
+          msg.includes('Não foi possível enviar o e-mail')
+        ) {
+          msg = 'Não foi possível enviar o e-mail de recuperação. Verifique a configuração de e-mail do Supabase e tente novamente.';
+        } else if (msg.includes('rate limit')) {
           msg = 'Muitas tentativas recentes. Por favor, aguarde alguns minutos antes de tentar novamente.';
         }
         setError(msg);

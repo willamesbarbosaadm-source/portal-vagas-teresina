@@ -19,9 +19,15 @@ export interface SignUpCredentials extends AuthCredentials {
   name: string;
 }
 
+export interface SignUpResult {
+  user: AuthUser | null;
+  session: any | null;
+  needsEmailConfirmation: boolean;
+}
+
 export interface IAuthService {
   signIn(credentials: AuthCredentials): Promise<AuthUser>;
-  signUp(credentials: SignUpCredentials): Promise<AuthUser>;
+  signUp(credentials: SignUpCredentials): Promise<SignUpResult>;
   signOut(): Promise<void>;
   resetPassword(email: string): Promise<void>;
   updatePassword(newPassword: string): Promise<AuthUser | null>;
