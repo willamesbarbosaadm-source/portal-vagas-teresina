@@ -177,7 +177,7 @@ export async function extractCandidateProfileFromPdf(
   const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.VITE_FIREBASE_API_KEY;
 
   if (apiKey) {
-    const modelsToTry = ['gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+    const modelsToTry = ['gemini-flash-latest', 'gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
     let jsonText = '';
 
     // ESTRATÉGIA 1: Se já temos o texto extraído do PDF, envia como prompt de texto leve para Gemini (evita erro 503 de PDF binário)
