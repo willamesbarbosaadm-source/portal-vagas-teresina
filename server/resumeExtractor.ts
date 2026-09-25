@@ -63,12 +63,23 @@ function heuristicExtract(text: string): ExtractedCandidateProfile {
   const profile: ExtractedCandidateProfile = { ...emptyProfile };
   if (!text) return profile;
 
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const cleanLines = text
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0 && !/^-- \d+ of \d+ --$/.test(l));
 
-  // 1. Nome (Geralmente primeira linha relevante com letras)
-  for (const line of lines.slice(0, 5)) {
-    if (line.length > 3 && line.length < 50 && !/curr[ií]culo|resumo|email|telefone|contato/i.test(line)) {
-      profile.name = line;
+  // 1. Nome (primeira linha válida que não seja rótulo de documento)
+  for (const line of cleanLines.slice(0, 8)) {
+    if (
+      line.length >= 3 &&
+      line.length < 60 &&
+      !/curr[ií]culo|resumo|email|telefone|contato|perfil|página/i.test(line) &&
+      !/^nome:/i.test(line)
+    ) {
+      profile.name = line.replace(/^nome[:\s]*/i, '').trim();
+      break;
+    } else if (/^nome:/i.test(line)) {
+      profile.name = line.replace(/^nome[:\s]*/i, '').trim();
       break;
     }
   }
@@ -95,25 +106,25 @@ function heuristicExtract(text: string): ExtractedCandidateProfile {
   }
 
   // 5. Formação Acadêmica
-  const eduMatch = text.match(/(?:formação|escolaridade|graduação|ensino|curso)[^\n]*\n([\s\S]{1,250}?)(?=\n\n|\n[A-Z\s]{4,}:|$)/i);
+  const eduMatch = text.match(/(?:formação|escolaridade|graduação|ensino|curso)[^\n]*[\n:]+([\s\S]{1,300}?)(?=\n\s*\n|\n[A-Z\s]{4,}:|$)/i);
   if (eduMatch) {
     profile.education = eduMatch[1].trim();
   }
 
   // 6. Experiência
-  const expMatch = text.match(/(?:experiência|histórico profissional|atuacao)[^\n]*\n([\s\S]{1,400}?)(?=\n\n|\n[A-Z\s]{4,}:|$)/i);
+  const expMatch = text.match(/(?:experiência|histórico profissional|atuação|empresas)[^\n]*[\n:]+([\s\S]{1,500}?)(?=\n\s*\n|\n[A-Z\s]{4,}:|$)/i);
   if (expMatch) {
     profile.experience = expMatch[1].trim();
   }
 
   // 7. Competências
-  const skillsMatch = text.match(/(?:competências|habilidades|conhecimentos|skills)[^\n]*\n?([^\n]{1,200})/i);
+  const skillsMatch = text.match(/(?:competências|habilidades|conhecimentos|skills|tecnologias)[^\n]*[\n:]+([^\n]{1,250})/i);
   if (skillsMatch) {
     profile.skills = skillsMatch[1].trim();
   }
 
   // 8. Cargo Desejado
-  const roleMatch = text.match(/(?:cargo|objetivo|função|vaga de interesse):\s*([^\n]+)/i);
+  const roleMatch = text.match(/(?:cargo|objetivo|função|vaga de interesse|área de atuação):\s*([^\n]+)/i);
   if (roleMatch) {
     profile.desiredRole = roleMatch[1].trim();
   }
@@ -143,7 +154,7 @@ export async function extractTextFromPdfBuffer(pdfBuffer: Buffer): Promise<strin
 }
 
 /**
- * Processa o PDF e extrai os campos do currículo estruturados usando Gemini AI (Multimodal PDF InlineData)
+ * Processa o PDF e extrai os campos do currículo estruturados usando Gemini AI
  */
 export async function extractCandidateProfileFromPdf(
   pdfBuffer: Buffer,
@@ -166,66 +177,90 @@ export async function extractCandidateProfileFromPdf(
   const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.VITE_FIREBASE_API_KEY;
 
   if (apiKey) {
-    const modelsToTry = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-flash-latest'];
-    const pdfBase64 = pdfBuffer.toString('base64');
+    const modelsToTry = ['gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
     let jsonText = '';
 
-    for (const modelName of modelsToTry) {
-      try {
-        const ai = new GoogleGenAI({ apiKey });
-        const response = await ai.models.generateContent({
-          model: modelName,
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                {
-                  inlineData: {
-                    mimeType: 'application/pdf',
-                    data: pdfBase64
-                  }
-                },
-                {
-                  text: `Analise com atenção o arquivo PDF de currículo em anexo e extraia todas as informações profissionais do candidato em formato JSON estrito.
-
-A resposta DEVE ser exclusivamente um JSON válido com as seguintes chaves:
+    // ESTRATÉGIA 1: Se já temos o texto extraído do PDF, envia como prompt de texto leve para Gemini (evita erro 503 de PDF binário)
+    if (rawTextLength >= 30) {
+      for (const modelName of modelsToTry) {
+        try {
+          const ai = new GoogleGenAI({ apiKey });
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents: `Analise este texto de currículo e extraia em JSON estrito com as chaves:
 {
-  "name": "Nome completo do candidato",
-  "phone": "Telefone ou WhatsApp de contato",
-  "city": "Cidade e estado (ex: Teresina - PI)",
+  "name": "Nome completo",
+  "phone": "Telefone/WhatsApp",
+  "city": "Cidade e estado",
   "address": "Bairro ou endereço",
-  "desiredRole": "Cargo ou área profissional pretendida",
-  "education": "Resumo da formação acadêmica e cursos",
-  "experience": "Principais experiências de trabalho e funções anteriores",
-  "salaryExpectation": "Pretensão salarial se informada ou 'A combinar'",
-  "linkedin": "Link do perfil do LinkedIn se houver",
+  "desiredRole": "Cargo pretendido",
+  "education": "Formação acadêmica",
+  "experience": "Experiência profissional",
+  "salaryExpectation": "Pretensão salarial",
+  "linkedin": "LinkedIn",
   "modality": "Presencial, Remoto ou Híbrido",
   "contractType": "CLT, PJ ou Estágio",
-  "skills": "Competências e habilidades principais separadas por vírgula",
-  "summary": "Resumo do perfil profissional do candidato"
+  "skills": "Habilidades separadas por vírgula",
+  "summary": "Resumo do perfil"
 }
 
-Regras:
-1. Se algum campo não estiver presente no documento, deixe como string vazia "".
-2. Se o PDF for uma imagem ou escaneado, leia todo o texto visual do currículo.
-3. Não invente informações fictícias, use apenas o conteúdo do documento.`
-                }
-              ]
+Texto do currículo:
+${rawText}`,
+            config: {
+              responseMimeType: 'application/json',
+              temperature: 0.1
             }
-          ],
-          config: {
-            responseMimeType: 'application/json',
-            temperature: 0.1
-          }
-        });
+          });
 
-        jsonText = response.text?.trim() || '';
-        if (jsonText) {
-          console.log(`[GEMINI_EXTRACTOR] Extração bem-sucedida usando o modelo ${modelName}`);
-          break;
+          jsonText = response.text?.trim() || '';
+          if (jsonText) {
+            console.log(`[GEMINI_EXTRACTOR] Extração por texto bem-sucedida usando ${modelName}`);
+            break;
+          }
+        } catch (tErr: any) {
+          console.warn(`[GEMINI_EXTRACTOR] Falha no texto com modelo ${modelName}:`, tErr?.message || tErr);
         }
-      } catch (err: any) {
-        console.warn(`[GEMINI_EXTRACTOR] Falha com o modelo ${modelName}:`, err?.message || err);
+      }
+    }
+
+    // ESTRATÉGIA 2: Se o texto estava vazio ou o prompt de texto falhou, envia o arquivo PDF multimodal completo
+    if (!jsonText) {
+      const pdfBase64 = pdfBuffer.toString('base64');
+      for (const modelName of modelsToTry) {
+        try {
+          const ai = new GoogleGenAI({ apiKey });
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  {
+                    inlineData: {
+                      mimeType: 'application/pdf',
+                      data: pdfBase64
+                    }
+                  },
+                  {
+                    text: `Analise com atenção o arquivo PDF de currículo em anexo e extraia todas as informações profissionais do candidato em formato JSON estrito.`
+                  }
+                ]
+              }
+            ],
+            config: {
+              responseMimeType: 'application/json',
+              temperature: 0.1
+            }
+          });
+
+          jsonText = response.text?.trim() || '';
+          if (jsonText) {
+            console.log(`[GEMINI_EXTRACTOR] Extração multimodal bem-sucedida usando ${modelName}`);
+            break;
+          }
+        } catch (mErr: any) {
+          console.warn(`[GEMINI_EXTRACTOR] Falha multimodal com modelo ${modelName}:`, mErr?.message || mErr);
+        }
       }
     }
 
@@ -233,7 +268,7 @@ Regras:
       try {
         const parsed = JSON.parse(jsonText);
         extracted = {
-          name: parsed.name || '',
+          name: parsed.name && parsed.name !== '-- 1 of 1 --' ? parsed.name : '',
           phone: parsed.phone || '',
           city: parsed.city || '',
           address: parsed.address || '',

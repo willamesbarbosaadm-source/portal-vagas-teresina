@@ -922,10 +922,13 @@ function cleanPdfText(text) {
 function heuristicExtract(text) {
   const profile = { ...emptyProfile };
   if (!text) return profile;
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-  for (const line of lines.slice(0, 5)) {
-    if (line.length > 3 && line.length < 50 && !/curr[ií]culo|resumo|email|telefone|contato/i.test(line)) {
-      profile.name = line;
+  const cleanLines = text.split("\n").map((l) => l.trim()).filter((l) => l.length > 0 && !/^-- \d+ of \d+ --$/.test(l));
+  for (const line of cleanLines.slice(0, 8)) {
+    if (line.length >= 3 && line.length < 60 && !/curr[ií]culo|resumo|email|telefone|contato|perfil|página/i.test(line) && !/^nome:/i.test(line)) {
+      profile.name = line.replace(/^nome[:\s]*/i, "").trim();
+      break;
+    } else if (/^nome:/i.test(line)) {
+      profile.name = line.replace(/^nome[:\s]*/i, "").trim();
       break;
     }
   }
@@ -944,19 +947,19 @@ function heuristicExtract(text) {
   if (linkedinMatch) {
     profile.linkedin = linkedinMatch[0].trim();
   }
-  const eduMatch = text.match(/(?:formação|escolaridade|graduação|ensino|curso)[^\n]*\n([\s\S]{1,250}?)(?=\n\n|\n[A-Z\s]{4,}:|$)/i);
+  const eduMatch = text.match(/(?:formação|escolaridade|graduação|ensino|curso)[^\n]*[\n:]+([\s\S]{1,300}?)(?=\n\s*\n|\n[A-Z\s]{4,}:|$)/i);
   if (eduMatch) {
     profile.education = eduMatch[1].trim();
   }
-  const expMatch = text.match(/(?:experiência|histórico profissional|atuacao)[^\n]*\n([\s\S]{1,400}?)(?=\n\n|\n[A-Z\s]{4,}:|$)/i);
+  const expMatch = text.match(/(?:experiência|histórico profissional|atuação|empresas)[^\n]*[\n:]+([\s\S]{1,500}?)(?=\n\s*\n|\n[A-Z\s]{4,}:|$)/i);
   if (expMatch) {
     profile.experience = expMatch[1].trim();
   }
-  const skillsMatch = text.match(/(?:competências|habilidades|conhecimentos|skills)[^\n]*\n?([^\n]{1,200})/i);
+  const skillsMatch = text.match(/(?:competências|habilidades|conhecimentos|skills|tecnologias)[^\n]*[\n:]+([^\n]{1,250})/i);
   if (skillsMatch) {
     profile.skills = skillsMatch[1].trim();
   }
-  const roleMatch = text.match(/(?:cargo|objetivo|função|vaga de interesse):\s*([^\n]+)/i);
+  const roleMatch = text.match(/(?:cargo|objetivo|função|vaga de interesse|área de atuação):\s*([^\n]+)/i);
   if (roleMatch) {
     profile.desiredRole = roleMatch[1].trim();
   }
@@ -991,71 +994,91 @@ async function extractCandidateProfileFromPdf(pdfBuffer, filename) {
   let warning;
   const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.VITE_FIREBASE_API_KEY;
   if (apiKey) {
-    const modelsToTry = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash", "gemini-flash-latest"];
-    const pdfBase64 = pdfBuffer.toString("base64");
+    const modelsToTry = ["gemini-3.6-flash", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
     let jsonText = "";
-    for (const modelName of modelsToTry) {
-      try {
-        const ai = new GoogleGenAI({ apiKey });
-        const response = await ai.models.generateContent({
-          model: modelName,
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  inlineData: {
-                    mimeType: "application/pdf",
-                    data: pdfBase64
-                  }
-                },
-                {
-                  text: `Analise com aten\xE7\xE3o o arquivo PDF de curr\xEDculo em anexo e extraia todas as informa\xE7\xF5es profissionais do candidato em formato JSON estrito.
-
-A resposta DEVE ser exclusivamente um JSON v\xE1lido com as seguintes chaves:
+    if (rawTextLength >= 30) {
+      for (const modelName of modelsToTry) {
+        try {
+          const ai = new GoogleGenAI({ apiKey });
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents: `Analise este texto de curr\xEDculo e extraia em JSON estrito com as chaves:
 {
-  "name": "Nome completo do candidato",
-  "phone": "Telefone ou WhatsApp de contato",
-  "city": "Cidade e estado (ex: Teresina - PI)",
+  "name": "Nome completo",
+  "phone": "Telefone/WhatsApp",
+  "city": "Cidade e estado",
   "address": "Bairro ou endere\xE7o",
-  "desiredRole": "Cargo ou \xE1rea profissional pretendida",
-  "education": "Resumo da forma\xE7\xE3o acad\xEAmica e cursos",
-  "experience": "Principais experi\xEAncias de trabalho e fun\xE7\xF5es anteriores",
-  "salaryExpectation": "Pretens\xE3o salarial se informada ou 'A combinar'",
-  "linkedin": "Link do perfil do LinkedIn se houver",
+  "desiredRole": "Cargo pretendido",
+  "education": "Forma\xE7\xE3o acad\xEAmica",
+  "experience": "Experi\xEAncia profissional",
+  "salaryExpectation": "Pretens\xE3o salarial",
+  "linkedin": "LinkedIn",
   "modality": "Presencial, Remoto ou H\xEDbrido",
   "contractType": "CLT, PJ ou Est\xE1gio",
-  "skills": "Compet\xEAncias e habilidades principais separadas por v\xEDrgula",
-  "summary": "Resumo do perfil profissional do candidato"
+  "skills": "Habilidades separadas por v\xEDrgula",
+  "summary": "Resumo do perfil"
 }
 
-Regras:
-1. Se algum campo n\xE3o estiver presente no documento, deixe como string vazia "".
-2. Se o PDF for uma imagem ou escaneado, leia todo o texto visual do curr\xEDculo.
-3. N\xE3o invente informa\xE7\xF5es fict\xEDcias, use apenas o conte\xFAdo do documento.`
-                }
-              ]
+Texto do curr\xEDculo:
+${rawText}`,
+            config: {
+              responseMimeType: "application/json",
+              temperature: 0.1
             }
-          ],
-          config: {
-            responseMimeType: "application/json",
-            temperature: 0.1
+          });
+          jsonText = response.text?.trim() || "";
+          if (jsonText) {
+            console.log(`[GEMINI_EXTRACTOR] Extra\xE7\xE3o por texto bem-sucedida usando ${modelName}`);
+            break;
           }
-        });
-        jsonText = response.text?.trim() || "";
-        if (jsonText) {
-          console.log(`[GEMINI_EXTRACTOR] Extra\xE7\xE3o bem-sucedida usando o modelo ${modelName}`);
-          break;
+        } catch (tErr) {
+          console.warn(`[GEMINI_EXTRACTOR] Falha no texto com modelo ${modelName}:`, tErr?.message || tErr);
         }
-      } catch (err) {
-        console.warn(`[GEMINI_EXTRACTOR] Falha com o modelo ${modelName}:`, err?.message || err);
+      }
+    }
+    if (!jsonText) {
+      const pdfBase64 = pdfBuffer.toString("base64");
+      for (const modelName of modelsToTry) {
+        try {
+          const ai = new GoogleGenAI({ apiKey });
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  {
+                    inlineData: {
+                      mimeType: "application/pdf",
+                      data: pdfBase64
+                    }
+                  },
+                  {
+                    text: `Analise com aten\xE7\xE3o o arquivo PDF de curr\xEDculo em anexo e extraia todas as informa\xE7\xF5es profissionais do candidato em formato JSON estrito.`
+                  }
+                ]
+              }
+            ],
+            config: {
+              responseMimeType: "application/json",
+              temperature: 0.1
+            }
+          });
+          jsonText = response.text?.trim() || "";
+          if (jsonText) {
+            console.log(`[GEMINI_EXTRACTOR] Extra\xE7\xE3o multimodal bem-sucedida usando ${modelName}`);
+            break;
+          }
+        } catch (mErr) {
+          console.warn(`[GEMINI_EXTRACTOR] Falha multimodal com modelo ${modelName}:`, mErr?.message || mErr);
+        }
       }
     }
     if (jsonText) {
       try {
         const parsed = JSON.parse(jsonText);
         extracted = {
-          name: parsed.name || "",
+          name: parsed.name && parsed.name !== "-- 1 of 1 --" ? parsed.name : "",
           phone: parsed.phone || "",
           city: parsed.city || "",
           address: parsed.address || "",
