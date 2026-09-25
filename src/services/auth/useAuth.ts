@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabaseAuth, isSupabaseConfigured, ADMIN_EMAIL } from './index';
+import { firebaseAuth, ADMIN_EMAIL, getFirebaseAuthErrorMessage } from './firebaseAuth';
 import { AuthUser, AuthCredentials, SignUpCredentials } from './types';
 
-export function useSupabaseAuth() {
+export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -10,8 +10,8 @@ export function useSupabaseAuth() {
   useEffect(() => {
     let isMounted = true;
 
-    // Detecção e restauração inicial da sessão
-    supabaseAuth.getCurrentUser().then((currentUser) => {
+    // Detecção inicial da sessão Firebase
+    firebaseAuth.getCurrentUser().then((currentUser) => {
       if (isMounted) {
         setUser(currentUser);
         setIsAdmin(Boolean(currentUser && currentUser.isAdmin));
@@ -21,8 +21,8 @@ export function useSupabaseAuth() {
       if (isMounted) setLoading(false);
     });
 
-    // Ouvinte em tempo real para mudanças de estado de autenticação
-    const unsubscribe = supabaseAuth.onAuthStateChanged((updatedUser) => {
+    // Ouvinte em tempo real oficial do Firebase Authentication
+    const unsubscribe = firebaseAuth.onAuthStateChanged((updatedUser) => {
       if (isMounted) {
         setUser(updatedUser);
         setIsAdmin(Boolean(updatedUser && updatedUser.isAdmin));
@@ -39,7 +39,7 @@ export function useSupabaseAuth() {
   const signIn = useCallback(async (credentials: AuthCredentials) => {
     setLoading(true);
     try {
-      const authUser = await supabaseAuth.signIn(credentials);
+      const authUser = await firebaseAuth.signIn(credentials);
       setUser(authUser);
       setIsAdmin(Boolean(authUser.isAdmin));
       return authUser;
@@ -51,12 +51,7 @@ export function useSupabaseAuth() {
   const signUp = useCallback(async (credentials: SignUpCredentials) => {
     setLoading(true);
     try {
-      const result = await supabaseAuth.signUp(credentials);
-      if (result.user && result.session) {
-        setUser(result.user);
-        setIsAdmin(Boolean(result.user.isAdmin));
-      }
-      return result;
+      return await firebaseAuth.signUp(credentials);
     } finally {
       setLoading(false);
     }
@@ -65,7 +60,7 @@ export function useSupabaseAuth() {
   const signOut = useCallback(async () => {
     setLoading(true);
     try {
-      await supabaseAuth.signOut();
+      await firebaseAuth.signOut();
       setUser(null);
       setIsAdmin(false);
     } finally {
@@ -74,33 +69,23 @@ export function useSupabaseAuth() {
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {
-    await supabaseAuth.resetPassword(email);
-  }, []);
-
-  const updatePassword = useCallback(async (newPassword: string) => {
-    const updated = await supabaseAuth.updatePassword(newPassword);
-    if (updated) {
-      setUser(updated);
-      setIsAdmin(Boolean(updated.isAdmin));
-    }
-    return updated;
+    await firebaseAuth.resetPassword(email);
   }, []);
 
   const getAccessToken = useCallback(async () => {
-    return await supabaseAuth.getAccessToken();
+    return await firebaseAuth.getAccessToken();
   }, []);
 
   return {
     user,
     loading,
     isAdmin,
-    isConfigured: isSupabaseConfigured,
     adminEmail: ADMIN_EMAIL,
     signIn,
     signUp,
     signOut,
     resetPassword,
-    updatePassword,
-    getAccessToken
+    getAccessToken,
+    getErrorMessage: getFirebaseAuthErrorMessage
   };
 }

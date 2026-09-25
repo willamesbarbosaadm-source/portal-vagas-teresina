@@ -1,4 +1,9 @@
 export * from './types';
-export { supabase, isSupabaseConfigured } from './supabaseClient';
-export { supabaseAuth, SupabaseAuthService, ADMIN_EMAIL } from './supabaseAuth';
-export { useSupabaseAuth } from './useAuth';
+export { 
+  firebaseAuth, 
+  FirebaseAuthService, 
+  ADMIN_EMAIL, 
+  mapFirebaseUser, 
+  getFirebaseAuthErrorMessage 
+} from './firebaseAuth';
+export { useAuth } from './useAuth';

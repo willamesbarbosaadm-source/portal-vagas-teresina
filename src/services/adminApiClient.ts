@@ -1,4 +1,4 @@
-import { supabaseAuth } from './auth';
+import { firebaseAuth } from './auth';
 
 export interface AdminApiResponse<T = any> {
   success: boolean;
@@ -10,7 +10,7 @@ export interface AdminApiResponse<T = any> {
 /**
  * Função centralizada para executar chamadas a endpoints administrativos protegidos.
  * Garante:
- * 1. Obtenção do token de acesso Supabase (getAccessToken);
+ * 1. Obtenção do token de acesso Firebase (getAccessToken);
  * 2. Bloqueio imediato no client-side se o usuário não possuir token ativo;
  * 3. Envio seguro do cabeçalho Authorization: Bearer <token>;
  * 4. Tratamento unificado de 401 (sessão expirada / não autenticado), 403 (não admin) e erros de rede.
@@ -19,12 +19,12 @@ export async function adminFetch<T = any>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<AdminApiResponse<T>> {
-  const token = await supabaseAuth.getAccessToken();
+  const token = await firebaseAuth.getAccessToken();
 
   if (!token) {
     return {
       success: false,
-      error: 'Autenticação necessária. Nenhuma sessão ativa do Supabase encontrada. Por favor, autentique-se como administrador.',
+      error: 'Autenticação necessária. Nenhuma sessão ativa do Firebase encontrada. Por favor, autentique-se como administrador.',
       statusCode: 401
     };
   }

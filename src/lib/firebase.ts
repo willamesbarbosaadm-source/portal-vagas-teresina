@@ -1,4 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
 import { 
   getFirestore, 
   collection, 
@@ -65,6 +66,7 @@ const firebaseConfig = {
 };
 
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+export const auth = getAuth(app);
 const firestoreDbId = !isPlaceholder(import.meta.env.VITE_FIREBASE_DATABASE_ID)
   ? import.meta.env.VITE_FIREBASE_DATABASE_ID.trim()
   : REAL_FIREBASE_CONFIG.firestoreDatabaseId;

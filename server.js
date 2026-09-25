@@ -727,37 +727,13 @@ async function syncGupyJobs() {
   };
 }
 
-// server/supabaseAuthHelper.ts
+// server/firebaseAuthHelper.ts
 var ADMIN_EMAIL = "willamesbarbosaadm@gmail.com";
-var REAL_SUPABASE_CONFIG = {
-  url: "https://devkpsjwgvefikxbdsry.supabase.co",
-  anonKey: "sb_publishable_LsczW5EBxyg99ChAsnsegw_QeLhEt0d"
-};
-var isPlaceholder2 = (val) => !val || ["", "undefined", "null", "your_supabase_url", "your_supabase_anon_key", "1sdcfds"].includes(
-  val.trim().toLowerCase()
-) || !val.trim().startsWith("http");
-var isKeyPlaceholder = (val) => !val || ["", "undefined", "null", "your_supabase_anon_key", "placeholder-anon-key"].includes(
-  val.trim().toLowerCase()
-) || val.trim().length < 10;
-function getSupabaseServerConfig() {
-  const envUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const envAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-  const url = !isPlaceholder2(envUrl) ? envUrl.trim() : REAL_SUPABASE_CONFIG.url;
-  const anonKey = !isKeyPlaceholder(envAnonKey) ? envAnonKey.trim() : REAL_SUPABASE_CONFIG.anonKey;
-  const isConfigured = Boolean(
-    url.startsWith("http") && anonKey.length > 10
-  );
-  return {
-    url: isConfigured ? url : null,
-    anonKey: isConfigured ? anonKey : null,
-    isConfigured
-  };
-}
 function isAuthorizedAdmin(email) {
   if (!email) return false;
   return email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim();
 }
-async function validateSupabaseToken(token) {
+async function validateFirebaseToken(token) {
   if (!token || typeof token !== "string" || token.trim().length === 0) {
     return { ok: false, status: 401, error: "Token ausente ou inv\xE1lido." };
   }
@@ -792,97 +768,98 @@ async function validateSupabaseToken(token) {
   } catch {
     return { ok: false, status: 401, error: "Payload do token corrompido." };
   }
-  const { url, anonKey, isConfigured } = getSupabaseServerConfig();
-  if (!isConfigured || !url || !anonKey) {
+  const apiKey = process.env.VITE_FIREBASE_API_KEY || REAL_FIREBASE_CONFIG.apiKey;
+  if (!apiKey) {
     return {
       ok: false,
       status: 503,
-      error: "Servi\xE7o de autentica\xE7\xE3o Supabase n\xE3o configurado no servidor."
+      error: "Chave de API do Firebase n\xE3o configurada no servidor."
     };
   }
   try {
-    const response = await fetch(`${url}/auth/v1/user`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        apikey: anonKey
+    const response = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: token.trim() })
       }
-    });
+    );
     if (!response.ok) {
       return {
         ok: false,
         status: 401,
-        error: "Token rejeitado pelo provedor Supabase Auth."
+        error: "Token rejeitado pelo provedor Firebase Authentication."
       };
     }
-    const userData = await response.json();
-    const email = userData?.email ? String(userData.email).trim().toLowerCase() : "";
-    if (!email) {
+    const data = await response.json();
+    const userRecord = data?.users?.[0];
+    if (!userRecord || !userRecord.email) {
       return {
         ok: false,
         status: 401,
-        error: "Usu\xE1rio sem e-mail retornado pelo provedor Supabase."
+        error: "Usu\xE1rio n\xE3o localizado no Firebase Authentication."
       };
     }
+    const email = String(userRecord.email).toLowerCase().trim();
     const isAdmin = isAuthorizedAdmin(email);
     return {
       ok: true,
       status: 200,
       user: {
-        id: String(userData.id || ""),
+        id: userRecord.localId,
         email,
         isAdmin,
-        role: userData.role
+        emailVerified: Boolean(userRecord.emailVerified),
+        displayName: userRecord.displayName
       }
     };
-  } catch (networkErr) {
+  } catch (netErr) {
+    console.error("Erro de conex\xE3o ao validar token Firebase:", netErr);
     return {
       ok: false,
       status: 503,
-      error: "Falha de comunica\xE7\xE3o de rede com o servi\xE7o Supabase Auth."
+      error: "Falha tempor\xE1ria de comunica\xE7\xE3o com o servi\xE7o de autentica\xE7\xE3o do Firebase."
     };
   }
 }
-async function requireSupabaseAdmin(req, res, next) {
-  const authHeader = req.headers.authorization;
+async function requireFirebaseAdmin(req, res, next) {
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
-    return next();
+  const cronHeader = req.headers["x-cron-secret"];
+  const authHeader = req.headers.authorization;
+  if (cronSecret && cronSecret.length >= 8) {
+    if (cronHeader && cronHeader === cronSecret) {
+      return next();
+    }
+    if (authHeader && authHeader === `Bearer ${cronSecret}`) {
+      return next();
+    }
   }
-  if (!authHeader) {
-    return res.status(401).json({
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    res.status(401).json({
       success: false,
-      error: "Autentica\xE7\xE3o necess\xE1ria. Cabe\xE7alho Authorization ausente."
+      error: "Autentica\xE7\xE3o necess\xE1ria. Cabe\xE7alho Authorization ausente ou inv\xE1lido."
     });
+    return;
   }
-  if (!authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({
+  const token = authHeader.replace(/^Bearer\s+/, "").trim();
+  const validation = await validateFirebaseToken(token);
+  if (!validation.ok) {
+    res.status(validation.status).json({
       success: false,
-      error: "Formato de autentica\xE7\xE3o inv\xE1lido. Utilize Bearer <token>."
+      error: validation.error
     });
+    return;
   }
-  const token = authHeader.slice(7).trim();
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      error: "Token Bearer ausente."
-    });
-  }
-  const result = await validateSupabaseToken(token);
-  if (!result.ok) {
-    return res.status(result.status).json({
-      success: false,
-      error: result.error
-    });
-  }
-  if (!result.user.isAdmin) {
-    return res.status(403).json({
+  if (!validation.user.isAdmin) {
+    res.status(403).json({
       success: false,
       error: "Acesso negado. Apenas o administrador possui permiss\xE3o para esta opera\xE7\xE3o."
     });
+    return;
   }
-  req.supabaseUser = result.user;
-  return next();
+  req.firebaseUser = validation.user;
+  next();
 }
 
 // server.ts
@@ -950,7 +927,7 @@ async function startServer() {
       });
     }
   });
-  app.post("/api/sine/sync", requireSupabaseAdmin, async (req, res) => {
+  app.post("/api/sine/sync", requireFirebaseAdmin, async (req, res) => {
     try {
       const syncResult = await syncSineJobs();
       res.json(syncResult);
@@ -979,7 +956,7 @@ async function startServer() {
       });
     }
   });
-  app.post("/api/themos/sync", requireSupabaseAdmin, async (req, res) => {
+  app.post("/api/themos/sync", requireFirebaseAdmin, async (req, res) => {
     try {
       const syncResult = await syncThemosJobs();
       res.json(syncResult);
@@ -1050,7 +1027,7 @@ async function startServer() {
       res.status(500).json({ success: false, error: "Erro ao sincronizar vagas do Gupy Teresina." });
     }
   });
-  app.post("/api/gupy/sync", requireSupabaseAdmin, async (req, res) => {
+  app.post("/api/gupy/sync", requireFirebaseAdmin, async (req, res) => {
     try {
       const syncResult = await syncGupyJobs();
       res.json(syncResult);

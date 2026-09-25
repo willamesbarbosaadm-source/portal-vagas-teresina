@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import appLogo from '../assets/images/app_logo_1789757595739.jpg';
 import { X, Lock, Mail, User, Sparkles, ArrowRight, Eye, EyeOff, AlertCircle, CheckCircle2, ArrowLeft, KeyRound } from 'lucide-react';
-import { supabaseAuth, isSupabaseConfigured } from '../services/auth';
+import { firebaseAuth, getFirebaseAuthErrorMessage } from '../services/auth';
 
-export type AuthModalMode = 'login' | 'register' | 'forgot' | 'reset';
+export type AuthModalMode = 'login' | 'register' | 'forgot';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -56,28 +56,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setError(null);
     setSuccessMessage(null);
 
-    if (!isSupabaseConfigured) {
-      setError('Serviço de autenticação Supabase não está configurado.');
-      return;
-    }
-
     const cleanEmail = email.trim().toLowerCase();
     const cleanPass = password.trim();
     const cleanConfirmPass = confirmPassword.trim();
     const cleanName = name.trim();
 
-    // 1. FLUXO: CRIAR CONTA (REGISTER)
+    // 1. FLUXO: CRIAR CONTA (REGISTER) COM FIREBASE AUTH
     if (mode === 'register') {
       if (!cleanName) {
         setError('Por favor, informe seu nome completo.');
         return;
       }
       if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-        setError('Por favor, informe um endereço de e-mail válido.');
+        setError('Digite um e-mail válido.');
         return;
       }
       if (cleanPass.length < 6) {
-        setError('A senha deve conter no mínimo 6 caracteres.');
+        setError('A senha deve ter pelo menos 6 caracteres.');
         return;
       }
       if (cleanPass !== cleanConfirmPass) {
@@ -87,58 +82,34 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       setLoading(true);
       try {
-        const result = await supabaseAuth.signUp({
+        await firebaseAuth.signUp({
           name: cleanName,
           email: cleanEmail,
           password: cleanPass
         });
 
-        if (result.needsEmailConfirmation) {
-          setSuccessMessage(
-            `Cadastro realizado com sucesso! Enviamos um link de confirmação para ${cleanEmail}. Por favor, verifique sua caixa de entrada (ou pasta de spam) para confirmar sua conta antes de fazer login.`
-          );
-          setMode('login');
-          setPassword('');
-          setConfirmPassword('');
-          onShowToast(`📧 E-mail de confirmação enviado para ${cleanEmail}!`);
-        } else {
-          if (onLoginSuccess && result.user) onLoginSuccess(result.user);
-          onShowToast(`🚀 Conta criada com sucesso! Bem-vindo(a), ${result.user?.displayName || cleanName}!`);
-          onClose();
-        }
+        // Sucesso no cadastro: e-mail de confirmação enviado via sendEmailVerification()
+        setSuccessMessage('Conta criada com sucesso! Enviamos um e-mail de confirmação para seu endereço. Confirme seu e-mail antes de entrar.');
+        setMode('login');
+        setPassword('');
+        setConfirmPassword('');
+        onShowToast(`📧 E-mail de confirmação enviado para ${cleanEmail}!`);
       } catch (err: any) {
-        console.warn('[AuthModal Diagnostic] Supabase SignUp error:', {
-          status: err?.status,
-          message: err?.message,
-          originalMessage: err?.originalMessage
+        console.warn('[FirebaseAuth Diagnostic] Erro no cadastro:', {
+          code: err?.code,
+          message: err?.message
         });
-        let msg = err.message || 'Erro ao criar conta. Tente novamente.';
-        if (
-          msg.includes('Error sending confirmation email') ||
-          msg.includes('error sending confirmation email') ||
-          msg.includes('Não foi possível enviar o e-mail de confirmação')
-        ) {
-          msg = 'Não foi possível enviar o e-mail de confirmação. Verifique a configuração de e-mail do Supabase e tente novamente.';
-        } else if (msg.includes('User already registered') || msg.includes('already registered')) {
-          msg = 'Este e-mail já está cadastrado. Clique em "Fazer login" para entrar ou recupere sua senha.';
-        } else if (msg.includes('Password should be at least')) {
-          msg = 'A senha deve conter no mínimo 6 caracteres.';
-        } else if (msg.includes('valid email') || msg.includes('invalid email')) {
-          msg = 'Por favor, informe um endereço de e-mail válido.';
-        } else if (msg.includes('rate limit')) {
-          msg = 'Limite temporário de envio de e-mails atingido. Aguarde alguns instantes e tente novamente.';
-        }
-        setError(msg);
+        setError(getFirebaseAuthErrorMessage(err));
       } finally {
         setLoading(false);
       }
       return;
     }
 
-    // 2. FLUXO: ENTRAR (LOGIN)
+    // 2. FLUXO: ENTRAR (LOGIN) COM FIREBASE AUTH
     if (mode === 'login') {
       if (!cleanEmail || !cleanEmail.includes('@')) {
-        setError('Por favor, informe seu endereço de e-mail.');
+        setError('Digite um e-mail válido.');
         return;
       }
       if (!cleanPass) {
@@ -148,7 +119,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       setLoading(true);
       try {
-        const authUser = await supabaseAuth.signIn({
+        const authUser = await firebaseAuth.signIn({
           email: cleanEmail,
           password: cleanPass
         });
@@ -158,76 +129,41 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onShowToast(`👋 Bem-vindo(a) de volta, ${authUser.displayName || cleanEmail.split('@')[0]}! ${isAdmin ? '🔑 Painel Admin Ativo.' : ''}`);
         onClose();
       } catch (err: any) {
-        console.error('Supabase SignIn error:', err);
-        let msg = err.message || 'Erro ao realizar login. Tente novamente.';
-        if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
-          msg = 'E-mail ou senha incorretos. Verifique seus dados ou crie uma conta em "Cadastre-se grátis".';
-        } else if (msg.includes('Email not confirmed')) {
-          msg = 'Por favor, confirme seu e-mail através do link enviado no momento do cadastro.';
+        console.warn('[FirebaseAuth Diagnostic] Erro no login:', {
+          code: err?.code,
+          message: err?.message
+        });
+
+        if (err?.code === 'auth/email-not-verified' || err?.message?.includes('EMAIL_NOT_VERIFIED')) {
+          setError('Por favor, confirme seu e-mail através do link enviado para seu endereço antes de entrar.');
+        } else {
+          setError(getFirebaseAuthErrorMessage(err));
         }
-        setError(msg);
       } finally {
         setLoading(false);
       }
       return;
     }
 
-    // 3. FLUXO: RECUPERAR SENHA (FORGOT)
+    // 3. FLUXO: RECUPERAR SENHA (FORGOT) COM FIREBASE AUTH
     if (mode === 'forgot') {
       if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-        setError('Por favor, informe o e-mail da sua conta para receber o link de recuperação.');
+        setError('Digite um e-mail válido.');
         return;
       }
 
       setLoading(true);
       try {
-        await supabaseAuth.resetPassword(cleanEmail);
-        setSuccessMessage(`Enviamos um link de recuperação para ${cleanEmail}. Verifique sua caixa de entrada e spam para redefinir sua senha.`);
-        onShowToast(`📧 Link de recuperação enviado para ${cleanEmail}!`);
+        await firebaseAuth.resetPassword(cleanEmail);
+        setSuccessMessage('Se existir uma conta associada a este e-mail, enviaremos as instruções para redefinir sua senha.');
+        onShowToast(`📧 Instruções de recuperação enviadas para ${cleanEmail}!`);
       } catch (err: any) {
-        console.warn('[AuthModal Diagnostic] Supabase ResetPassword error:', {
-          message: err?.message,
-          status: err?.status
+        console.warn('[FirebaseAuth Diagnostic] Erro na recuperação de senha:', {
+          code: err?.code,
+          message: err?.message
         });
-        let msg = err.message || 'Erro ao enviar e-mail de recuperação.';
-        if (
-          msg.includes('Error sending') ||
-          msg.includes('error sending') ||
-          msg.includes('Não foi possível enviar o e-mail')
-        ) {
-          msg = 'Não foi possível enviar o e-mail de recuperação. Verifique a configuração de e-mail do Supabase e tente novamente.';
-        } else if (msg.includes('rate limit')) {
-          msg = 'Muitas tentativas recentes. Por favor, aguarde alguns minutos antes de tentar novamente.';
-        }
-        setError(msg);
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-
-    // 4. FLUXO: REDEFINIR SENHA (RESET)
-    if (mode === 'reset') {
-      if (cleanPass.length < 6) {
-        setError('A nova senha deve conter no mínimo 6 caracteres.');
-        return;
-      }
-      if (cleanPass !== cleanConfirmPass) {
-        setError('A confirmação da nova senha não confere.');
-        return;
-      }
-
-      setLoading(true);
-      try {
-        await supabaseAuth.updatePassword(cleanPass);
-        setSuccessMessage('Sua senha foi redefinida com sucesso! Você já pode entrar com sua nova senha.');
-        onShowToast('✅ Senha redefinida com sucesso!');
-        setPassword('');
-        setConfirmPassword('');
-        setMode('login');
-      } catch (err: any) {
-        console.error('Supabase UpdatePassword error:', err);
-        setError(err.message || 'Erro ao redefinir senha. O link pode ter expirado.');
+        // Mensagem discreta e amigável sem revelar detalhes desnecessários
+        setSuccessMessage('Se existir uma conta associada a este e-mail, enviaremos as instruções para redefinir sua senha.');
       } finally {
         setLoading(false);
       }
@@ -242,7 +178,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Fechar Modal */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-slate-400 hover:text-slate-900 p-1 transition-colors"
+          className="absolute top-5 right-5 text-slate-400 hover:text-slate-900 p-1 transition-colors cursor-pointer"
           title="Fechar"
         >
           <X className="w-6 h-6" />
@@ -260,15 +196,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
           <h3 className="text-2xl font-black text-slate-900 font-display">
             {mode === 'login' && 'Entrar na Conta'}
-            {mode === 'register' && 'Criar Conta Grátis'}
+            {mode === 'register' && 'Criar Conta'}
             {mode === 'forgot' && 'Recuperar Senha'}
-            {mode === 'reset' && 'Redefinir Senha'}
           </h3>
           <p className="text-slate-600 font-medium text-xs sm:text-sm mt-1">
-            {mode === 'login' && 'Entre com seu e-mail e senha cadastrados'}
+            {mode === 'login' && 'Entre com seu e-mail e senha'}
             {mode === 'register' && 'Cadastre-se para se candidatar e salvar vagas'}
-            {mode === 'forgot' && 'Informe seu e-mail para receber as instruções de recuperação'}
-            {mode === 'reset' && 'Digite sua nova senha de acesso'}
+            {mode === 'forgot' && 'Digite seu e-mail para receber as instruções de recuperação'}
           </p>
         </div>
 
@@ -288,7 +222,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         )}
 
-        {/* Abas: Entrar / Cadastrar (apenas visíveis em login e register) */}
+        {/* Abas: Entrar / Criar Conta (apenas visíveis em login e register) */}
         {(mode === 'login' || mode === 'register') && (
           <div className="flex bg-slate-100 p-1 rounded-2xl border-2 border-slate-900 mb-5">
             <button
@@ -304,7 +238,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Entrar
+              ENTRAR
             </button>
             <button
               type="button"
@@ -319,19 +253,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Criar Conta
+              CRIAR CONTA
             </button>
           </div>
         )}
 
-        {/* Formulário Supabase Auth */}
+        {/* Formulário Firebase Authentication */}
         <form onSubmit={handleSubmit} className="space-y-3.5">
           
           {/* Campo: Nome Completo (Apenas Cadastro) */}
           {mode === 'register' && (
             <div>
               <label className="block text-xs font-black text-slate-900 uppercase mb-1">
-                Nome Completo *
+                Nome *
               </label>
               <div className="relative">
                 <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -340,41 +274,39 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: Maria dos Santos"
+                  placeholder="Seu nome completo"
                   className="w-full pl-10 pr-4 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-600"
                 />
               </div>
             </div>
           )}
 
-          {/* Campo: E-mail (Login, Register e Forgot) */}
-          {mode !== 'reset' && (
-            <div>
-              <label className="block text-xs font-black text-slate-900 uppercase mb-1">
-                Endereço de E-mail *
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seuemail@exemplo.com"
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-600"
-                />
-              </div>
+          {/* Campo: E-mail (Todos os modos) */}
+          <div>
+            <label className="block text-xs font-black text-slate-900 uppercase mb-1">
+              E-mail *
+            </label>
+            <div className="relative">
+              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seuemail@exemplo.com"
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-600"
+              />
             </div>
-          )}
+          </div>
 
-          {/* Campo: Senha (Login, Register e Reset) */}
+          {/* Campo: Senha (Login e Register) */}
           {mode !== 'forgot' && (
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-xs font-black text-slate-900 uppercase">
-                  {mode === 'reset' ? 'Nova Senha *' : 'Senha *'}
+                  Senha *
                 </label>
-                {(mode === 'register' || mode === 'reset') && (
+                {mode === 'register' && (
                   <span className="text-[10px] text-slate-500 font-bold">mínimo 6 caracteres</span>
                 )}
               </div>
@@ -400,11 +332,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
-          {/* Campo: Confirmar Senha (Register e Reset) */}
-          {(mode === 'register' || mode === 'reset') && (
+          {/* Campo: Confirmar Senha (Apenas Register) */}
+          {mode === 'register' && (
             <div>
               <label className="block text-xs font-black text-slate-900 uppercase mb-1">
-                {mode === 'reset' ? 'Confirmar Nova Senha *' : 'Confirmar Senha *'}
+                Confirmar senha *
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -440,7 +372,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 }}
                 className="text-xs font-bold text-purple-700 hover:text-purple-900 hover:underline cursor-pointer"
               >
-                Esqueci minha senha
+                ESQUECI MINHA SENHA
               </button>
             </div>
           )}
@@ -458,27 +390,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {mode === 'login' && (
                   <>
                     <Sparkles className="w-4 h-4 text-yellow-400" />
-                    <span>Entrar no Portal</span>
+                    <span>ENTRAR</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
                 {mode === 'register' && (
                   <>
                     <Sparkles className="w-4 h-4 text-yellow-400" />
-                    <span>Criar Minha Conta Grátis</span>
+                    <span>CRIAR CONTA</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
                 {mode === 'forgot' && (
                   <>
                     <KeyRound className="w-4 h-4 text-yellow-400" />
-                    <span>Enviar Link de Recuperação</span>
-                  </>
-                )}
-                {mode === 'reset' && (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-green-400" />
-                    <span>Salvar Nova Senha</span>
+                    <span>ENVIAR LINK DE RECUPERAÇÃO</span>
                   </>
                 )}
               </>
@@ -500,7 +426,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 }}
                 className="text-purple-700 font-black hover:underline cursor-pointer"
               >
-                Criar uma conta
+                CRIAR CONTA
               </button>
             </p>
           )}
@@ -517,12 +443,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 }}
                 className="text-purple-700 font-black hover:underline cursor-pointer"
               >
-                Fazer login
+                ENTRAR
               </button>
             </p>
           )}
 
-          {(mode === 'forgot' || mode === 'reset') && (
+          {mode === 'forgot' && (
             <button
               type="button"
               onClick={() => {

@@ -6,7 +6,7 @@ import { createServer as createViteServer } from "vite";
 import { syncSineJobs } from "./server/sineProvider.ts";
 import { syncThemosJobs } from "./server/themosProvider.ts";
 import { syncGupyJobs, fetchGupyTeresinaJobs } from "./server/gupyProvider.ts";
-import { requireSupabaseAdmin } from "./server/supabaseAuthHelper.ts";
+import { requireFirebaseAdmin } from "./server/firebaseAuthHelper.ts";
 import { getServerFirestore, REAL_FIREBASE_CONFIG } from "./server/firebaseDb.ts";
 
 async function startServer() {
@@ -83,8 +83,8 @@ async function startServer() {
     }
   });
 
-  // Manual admin SINE-PI sync trigger (Protegido por Supabase Admin / Cron Secret)
-  app.post("/api/sine/sync", requireSupabaseAdmin, async (req, res) => {
+  // Manual admin SINE-PI sync trigger (Protegido por Firebase Admin / Cron Secret)
+  app.post("/api/sine/sync", requireFirebaseAdmin, async (req, res) => {
     try {
       const syncResult = await syncSineJobs();
       res.json(syncResult);
@@ -118,8 +118,8 @@ async function startServer() {
     }
   });
 
-  // Manual admin Themos Vagas sync trigger (Protegido por Supabase Admin / Cron Secret)
-  app.post("/api/themos/sync", requireSupabaseAdmin, async (req, res) => {
+  // Manual admin Themos Vagas sync trigger (Protegido por Firebase Admin / Cron Secret)
+  app.post("/api/themos/sync", requireFirebaseAdmin, async (req, res) => {
     try {
       const syncResult = await syncThemosJobs();
       res.json(syncResult);
@@ -201,8 +201,8 @@ async function startServer() {
     }
   });
 
-  // Manual admin Gupy sync trigger (Protegido por Supabase Admin / Cron Secret)
-  app.post("/api/gupy/sync", requireSupabaseAdmin, async (req, res) => {
+  // Manual admin Gupy sync trigger (Protegido por Firebase Admin / Cron Secret)
+  app.post("/api/gupy/sync", requireFirebaseAdmin, async (req, res) => {
     try {
       const syncResult = await syncGupyJobs();
       res.json(syncResult);

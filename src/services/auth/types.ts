@@ -4,6 +4,7 @@ export interface AuthUser {
   displayName: string | null;
   photoURL?: string | null;
   isAdmin?: boolean;
+  emailVerified: boolean;
   metadata?: {
     createdAt?: string;
     lastSignInTime?: string;
@@ -20,8 +21,7 @@ export interface SignUpCredentials extends AuthCredentials {
 }
 
 export interface SignUpResult {
-  user: AuthUser | null;
-  session: any | null;
+  user: AuthUser;
   needsEmailConfirmation: boolean;
 }
 
@@ -30,10 +30,9 @@ export interface IAuthService {
   signUp(credentials: SignUpCredentials): Promise<SignUpResult>;
   signOut(): Promise<void>;
   resetPassword(email: string): Promise<void>;
-  updatePassword(newPassword: string): Promise<AuthUser | null>;
+  sendEmailVerification(): Promise<void>;
   getCurrentUser(): Promise<AuthUser | null>;
-  getSession(): Promise<any>;
   getAccessToken(): Promise<string | null>;
-  onAuthStateChanged(callback: (user: AuthUser | null, event?: string) => void): () => void;
+  onAuthStateChanged(callback: (user: AuthUser | null) => void): () => void;
   isAdmin(user: AuthUser | null): boolean;
 }

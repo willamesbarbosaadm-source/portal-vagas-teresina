@@ -26,7 +26,7 @@ import {
 import { Job, GratitudeComment, FilterState, WorkMode, JobSource } from './types';
 import { INITIAL_JOBS, INCOMING_JOBS_POOL, INITIAL_GRATITUDE } from './data/initialData';
 import { db } from './lib/firebase';
-import { supabaseAuth, isSupabaseConfigured } from './services/auth';
+import { firebaseAuth } from './services/auth';
 import { collection, getDocs, addDoc, onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
 import { Navbar } from './components/Navbar';
 import { JobFilters } from './components/JobFilters';
@@ -68,44 +68,20 @@ export default function App() {
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
 
   useEffect(() => {
-    // Inicialização da sessão oficial do Supabase Auth
-    if (isSupabaseConfigured) {
-      // Detecta fluxo oficial de recuperação de senha do Supabase Auth
-      const isRecoveryFlow = typeof window !== 'undefined' && (
-        window.location.hash.includes('type=recovery') ||
-        window.location.search.includes('type=recovery')
-      );
-      if (isRecoveryFlow) {
-        setAuthModalMode('reset');
-        setIsAuthModalOpen(true);
+    // Inicialização da sessão oficial do Firebase Authentication via onAuthStateChanged
+    const unsubscribe = firebaseAuth.onAuthStateChanged((user) => {
+      if (user) {
+        setCurrentUser(user);
+        setIsAdmin(Boolean(user.isAdmin));
+      } else {
+        setCurrentUser(null);
+        setIsAdmin(false);
       }
+    });
 
-      supabaseAuth.getCurrentUser().then((sbUser) => {
-        if (sbUser) {
-          setCurrentUser(sbUser);
-          setIsAdmin(Boolean(sbUser.isAdmin));
-        }
-      }).catch((e) => console.warn('Supabase getCurrentUser error:', e));
-
-      const unsubSupabase = supabaseAuth.onAuthStateChanged((sbUser, event) => {
-        if (event === 'PASSWORD_RECOVERY') {
-          setAuthModalMode('reset');
-          setIsAuthModalOpen(true);
-        }
-
-        if (sbUser) {
-          setCurrentUser(sbUser);
-          setIsAdmin(Boolean(sbUser.isAdmin));
-        } else {
-          setCurrentUser(null);
-          setIsAdmin(false);
-        }
-      });
-
-      return () => {
-        unsubSupabase();
-      };
-    }
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
@@ -157,9 +133,7 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
-      if (isSupabaseConfigured) {
-        await supabaseAuth.signOut().catch(() => {});
-      }
+      await firebaseAuth.signOut().catch(() => {});
     } catch (e) {
       console.error('Erro ao sair da conta:', e);
     } finally {
