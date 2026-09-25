@@ -729,6 +729,8 @@ async function syncGupyJobs() {
 
 // server/firebaseAuthHelper.ts
 var ADMIN_EMAIL = "willamesbarbosaadm@gmail.com";
+var AUTH_PROJECT_ID = "equipamento-estudantis-bxhgq";
+var AUTH_API_KEY = "AIzaSyAE9SFXO0CK3Rso-BsLpEld8xqMYayUoj0";
 function isAuthorizedAdmin(email) {
   if (!email) return false;
   return email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim();
@@ -765,15 +767,20 @@ async function validateFirebaseToken(token) {
         return { ok: false, status: 401, error: "Token de autentica\xE7\xE3o expirado." };
       }
     }
+    if (payload && payload.aud && typeof payload.aud === "string") {
+      if (payload.aud !== AUTH_PROJECT_ID && !payload.aud.includes(AUTH_PROJECT_ID)) {
+        return { ok: false, status: 401, error: "Token emitido para projeto de autentica\xE7\xE3o n\xE3o autorizado." };
+      }
+    }
   } catch {
     return { ok: false, status: 401, error: "Payload do token corrompido." };
   }
-  const apiKey = process.env.VITE_FIREBASE_API_KEY || REAL_FIREBASE_CONFIG.apiKey;
+  const apiKey = process.env.VITE_FIREBASE_AUTH_API_KEY || AUTH_API_KEY;
   if (!apiKey) {
     return {
       ok: false,
       status: 503,
-      error: "Chave de API do Firebase n\xE3o configurada no servidor."
+      error: "Chave de API do Firebase Authentication n\xE3o configurada no servidor."
     };
   }
   try {
@@ -789,7 +796,7 @@ async function validateFirebaseToken(token) {
       return {
         ok: false,
         status: 401,
-        error: "Token rejeitado pelo provedor Firebase Authentication."
+        error: "Token rejeitado pelo provedor Firebase Authentication (equipamento-estudantis-bxhgq)."
       };
     }
     const data = await response.json();
@@ -815,7 +822,7 @@ async function validateFirebaseToken(token) {
       }
     };
   } catch (netErr) {
-    console.error("Erro de conex\xE3o ao validar token Firebase:", netErr);
+    console.error("Erro de conex\xE3o ao validar token Firebase Auth:", netErr);
     return {
       ok: false,
       status: 503,

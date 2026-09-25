@@ -1,7 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
-import { REAL_FIREBASE_CONFIG } from './firebaseDb.ts';
 
 export const ADMIN_EMAIL = 'willamesbarbosaadm@gmail.com';
+export const AUTH_PROJECT_ID = 'equipamento-estudantis-bxhgq';
+export const AUTH_API_KEY = 'AIzaSyAE9SFXO0CK3Rso-BsLpEld8xqMYayUoj0';
 
 export interface AuthenticatedUser {
   id: string;
@@ -40,8 +41,9 @@ export function isAuthorizedAdmin(email?: string | null): boolean {
 }
 
 /**
- * Valida o Firebase ID Token de forma segura junto à API oficial do Google Identity Toolkit.
- * Não confia em validação client-side nem em decodificação Base64 sem verificação criptográfica.
+ * Valida o Firebase ID Token emitido exclusivamente pelo projeto de Authentication:
+ * Projeto: equipamento-estudantis-bxhgq
+ * Realiza verificação criptográfica autoritativa junto à API oficial do Google Identity Toolkit.
  */
 export async function validateFirebaseToken(token: string): Promise<TokenValidationResult> {
   if (!token || typeof token !== 'string' || token.trim().length === 0) {
@@ -73,7 +75,7 @@ export async function validateFirebaseToken(token: string): Promise<TokenValidat
     return { ok: false, status: 401, error: 'Assinatura criptográfica do token forjada ou ausente.' };
   }
 
-  // 3. Verificação de expiração prévia se contida no payload
+  // 3. Verificação de expiração e emissor prévia se contida no payload
   try {
     const payloadStr = Buffer.from(parts[1], 'base64url').toString('utf8');
     const payload = JSON.parse(payloadStr);
@@ -82,20 +84,26 @@ export async function validateFirebaseToken(token: string): Promise<TokenValidat
         return { ok: false, status: 401, error: 'Token de autenticação expirado.' };
       }
     }
+    // Confirma que o token foi emitido para o projeto de Auth equipamento-estudantis-bxhgq
+    if (payload && payload.aud && typeof payload.aud === 'string') {
+      if (payload.aud !== AUTH_PROJECT_ID && !payload.aud.includes(AUTH_PROJECT_ID)) {
+        return { ok: false, status: 401, error: 'Token emitido para projeto de autenticação não autorizado.' };
+      }
+    }
   } catch {
     return { ok: false, status: 401, error: 'Payload do token corrompido.' };
   }
 
-  const apiKey = process.env.VITE_FIREBASE_API_KEY || REAL_FIREBASE_CONFIG.apiKey;
+  const apiKey = process.env.VITE_FIREBASE_AUTH_API_KEY || AUTH_API_KEY;
   if (!apiKey) {
     return {
       ok: false,
       status: 503,
-      error: 'Chave de API do Firebase não configurada no servidor.'
+      error: 'Chave de API do Firebase Authentication não configurada no servidor.'
     };
   }
 
-  // 4. Validação autoritativa na API oficial do Google Identity Toolkit
+  // 4. Validação autoritativa na API oficial do Google Identity Toolkit para equipamento-estudantis-bxhgq
   try {
     const response = await fetch(
       `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
@@ -110,7 +118,7 @@ export async function validateFirebaseToken(token: string): Promise<TokenValidat
       return {
         ok: false,
         status: 401,
-        error: 'Token rejeitado pelo provedor Firebase Authentication.'
+        error: 'Token rejeitado pelo provedor Firebase Authentication (equipamento-estudantis-bxhgq).'
       };
     }
 
@@ -140,7 +148,7 @@ export async function validateFirebaseToken(token: string): Promise<TokenValidat
       }
     };
   } catch (netErr: any) {
-    console.error('Erro de conexão ao validar token Firebase:', netErr);
+    console.error('Erro de conexão ao validar token Firebase Auth:', netErr);
     return {
       ok: false,
       status: 503,
