@@ -104,9 +104,9 @@ function extractPublicationDate($: cheerio.CheerioAPI, bodyText: string): number
   });
 
   const explicitPatterns = [
-    /publicad[oa][^\\n]{0,40}(\\d{1,2}\\/\\d{1,2}\\/\\d{4})/i,
-    /publicad[oa][^\\n]{0,40}(\\d{1,2}\\s+de\\s+[a-zçãé]+\\s+de\\s+\\d{4})/i,
-    /(?:em|dia)\\s+(\\d{1,2}\\/\\d{1,2}\\/\\d{4})/i
+    /publicad[oa][^\n]{0,40}(\\d{1,2}\/\\d{1,2}\/\\d{4})/i,
+    /publicad[oa][^\n]{0,40}(\\d{1,2}\\s+de\\s+[a-zçãé]+\\s+de\\s+\\d{4})/i,
+    /(?:em|dia)\\s+(\\d{1,2}\/\\d{1,2}\/\\d{4})/i
   ];
 
   for (const pattern of explicitPatterns) {
