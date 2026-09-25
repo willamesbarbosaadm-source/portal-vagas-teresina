@@ -295,6 +295,43 @@ ${rawText}`,
   // O arquivo pode ter o nome de outra pessoa, empresa, modelo ou título.
   // O nome só pode vir do conteúdo do currículo.
 
+  // Campos de identificação do cabeçalho são determinísticos: não deixamos
+  // o modelo inventar ou substituir nome/telefone/endereço por inferência.
+  const header = rawText
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/[•·]/g, '\n');
+
+  const headerLines = header.split('\n').map(l => l.trim()).filter(Boolean);
+
+  const explicitName = header.match(/(?:^|\n)\s*(?:NOME\\s*(?:COMPLETO)?|CANDIDATO)\s*[:\-]\s*([^\n]+)/i);
+  const firstNameLine = headerLines.find(l =>
+    /^[A-Za-zÀ-ÿ]+(?:\s+[A-Za-zÀ-ÿ.'-]+){2,8}$/.test(l) &&
+    l.length <= 80
+  );
+  if (explicitName?.[1]?.trim()) {
+    extracted.name = explicitName[1].trim();
+  } else if (firstNameLine) {
+    extracted.name = firstNameLine;
+  }
+
+  const phoneLabel = header.match(/(?:telefone|celular|whatsapp|fone|contato)\s*[:\-]?\s*([^\n]+)/i);
+  if (phoneLabel?.[1]) {
+    const phones = phoneLabel[1].match(/(?:\+?55\s*)?\(?[1-9]\d{1,2}\)?\s*9\d{4}[-\s]?\d{4}/g);
+    if (phones?.length) extracted.phone = phones.join(', ');
+  }
+
+  const bairro = header.match(/Bairro\s*:\s*([^\n]+)/i);
+  if (bairro?.[1]) {
+    extracted.address = bairro[1].trim();
+    const city = bairro[1].match(/\b(Teresina|Timon|Parnaíba|Picos|Floriano|Campo Maior|Piripiri)\s*[–—-]?\s*(?:PI|MA)?\b/i);
+    if (city) extracted.city = city[1].trim();
+  }
+  if (!extracted.city) {
+    const city = header.match(/\b(Teresina|Timon|Parnaíba|Picos|Floriano|Campo Maior|Piripiri)\s*[–—-]\s*(?:PI|MA)\b/i);
+    if (city) extracted.city = city[1].trim();
+  }
+
   const filledFieldsList = Object.entries(extracted)
     .filter(([_, value]) => Boolean(value && typeof value === 'string' && value.trim().length > 0))
     .map(([key]) => key);
