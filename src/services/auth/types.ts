@@ -23,6 +23,8 @@ export interface SignUpCredentials extends AuthCredentials {
 export interface SignUpResult {
   user: AuthUser;
   needsEmailConfirmation: boolean;
+  emailSent?: boolean;
+  warningMessage?: string | null;
 }
 
 export interface IAuthService {

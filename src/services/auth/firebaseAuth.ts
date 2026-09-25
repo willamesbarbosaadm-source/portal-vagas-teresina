@@ -103,14 +103,16 @@ export class FirebaseAuthService implements IAuthService {
       }
     }
 
-    // 3. Envia e-mail de confirmação oficial com sendEmailVerification()
+    // 3. Envia e-mail de confirmação oficial com sendEmailVerification(user)
+    let emailSent = false;
+    let warningMessage: string | null = null;
     try {
       await sendEmailVerification(user);
+      emailSent = true;
     } catch (verifyErr: any) {
-      console.error('Erro ao enviar confirmação de e-mail Firebase:', verifyErr);
-      const err: any = new Error('Não foi possível enviar o e-mail de confirmação. Tente novamente.');
-      err.code = 'auth/email-verification-failed';
-      throw err;
+      console.warn('Falha temporária ao enviar e-mail de confirmação Firebase:', verifyErr);
+      emailSent = false;
+      warningMessage = 'Conta criada com sucesso! No entanto, ocorreu uma instabilidade ao enviar o e-mail de confirmação. Você poderá confirmar seu e-mail mais tarde ou redefinir sua senha.';
     }
 
     // 4. NÃO fazer login automático sem verificação de e-mail: desconecta imediatamente
@@ -119,7 +121,9 @@ export class FirebaseAuthService implements IAuthService {
     const authUser = mapFirebaseUser(user)!;
     return {
       user: authUser,
-      needsEmailConfirmation: true
+      needsEmailConfirmation: true,
+      emailSent,
+      warningMessage
     };
   }
 

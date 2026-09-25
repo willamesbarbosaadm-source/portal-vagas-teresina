@@ -82,18 +82,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       setLoading(true);
       try {
-        await firebaseAuth.signUp({
+        const result = await firebaseAuth.signUp({
           name: cleanName,
           email: cleanEmail,
           password: cleanPass
         });
 
-        // Sucesso no cadastro: e-mail de confirmação enviado via sendEmailVerification()
-        setSuccessMessage('Conta criada com sucesso! Enviamos um e-mail de confirmação para seu endereço. Confirme seu e-mail antes de entrar.');
+        // Sucesso no cadastro: verificação se o e-mail foi enviado ou se houve instabilidade
+        if (result.warningMessage) {
+          setSuccessMessage(result.warningMessage);
+          onShowToast('⚠️ Conta criada! Verifique sua caixa de entrada.');
+        } else {
+          setSuccessMessage('Conta criada com sucesso! Enviamos um e-mail de confirmação para seu endereço. Confirme seu e-mail antes de entrar.');
+          onShowToast(`📧 E-mail de confirmação enviado para ${cleanEmail}!`);
+        }
+
         setMode('login');
         setPassword('');
         setConfirmPassword('');
-        onShowToast(`📧 E-mail de confirmação enviado para ${cleanEmail}!`);
       } catch (err: any) {
         console.warn('[FirebaseAuth Diagnostic] Erro no cadastro:', {
           code: err?.code,
