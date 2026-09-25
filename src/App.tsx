@@ -25,8 +25,8 @@ import {
 } from 'lucide-react';
 import { Job, GratitudeComment, FilterState, WorkMode, JobSource } from './types';
 import { INITIAL_JOBS, INCOMING_JOBS_POOL, INITIAL_GRATITUDE } from './data/initialData';
-import { auth, db, isAdminUser } from './lib/firebase';
-import { onAuthStateChanged, signOut, getRedirectResult } from 'firebase/auth';
+import { db } from './lib/firebase';
+import { supabaseAuth, isSupabaseConfigured } from './services/auth';
 import { collection, getDocs, addDoc, onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
 import { Navbar } from './components/Navbar';
 import { JobFilters } from './components/JobFilters';
@@ -37,8 +37,9 @@ import { GratitudeWall } from './components/GratitudeWall';
 import { ShareModal } from './components/ShareModal';
 import { CoverLetterGeneratorModal } from './components/CoverLetterGeneratorModal';
 import { Toast } from './components/Toast';
-import { AuthModal } from './components/AuthModal';
+import { AuthModal, AuthModalMode } from './components/AuthModal';
 import { QuickApplyModal } from './components/QuickApplyModal';
+import { triggerSineSync } from './services/adminApiClient';
 import { B2BSection } from './components/B2BSection';
 import { HowItWorksSection } from './components/HowItWorksSection';
 import { TestimonialsSection } from './components/TestimonialsSection';
@@ -64,61 +65,47 @@ const MAX_COUNTDOWN = 30; // seconds between auto-update checks
 export default function App() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
 
   useEffect(() => {
-    // Restaura sessão salva de qualquer usuário (candidato, recrutador ou admin)
-    const savedUserSession = localStorage.getItem('vaiquedacerto_user_session');
-    if (savedUserSession) {
-      try {
-        const parsed = JSON.parse(savedUserSession);
-        if (parsed.user && (!parsed.expiresAt || parsed.expiresAt > Date.now())) {
-          setCurrentUser(parsed.user);
-          setIsAdmin(Boolean(parsed.user.isAdmin || (parsed.user.email && isAdminUser(parsed.user))));
-        } else {
-          localStorage.removeItem('vaiquedacerto_user_session');
+    // Inicialização da sessão oficial do Supabase Auth
+    if (isSupabaseConfigured) {
+      // Detecta fluxo oficial de recuperação de senha do Supabase Auth
+      const isRecoveryFlow = typeof window !== 'undefined' && (
+        window.location.hash.includes('type=recovery') ||
+        window.location.search.includes('type=recovery')
+      );
+      if (isRecoveryFlow) {
+        setAuthModalMode('reset');
+        setIsAuthModalOpen(true);
+      }
+
+      supabaseAuth.getCurrentUser().then((sbUser) => {
+        if (sbUser) {
+          setCurrentUser(sbUser);
+          setIsAdmin(Boolean(sbUser.isAdmin));
         }
-      } catch (e) {
-        localStorage.removeItem('vaiquedacerto_user_session');
-      }
-    }
+      }).catch((e) => console.warn('Supabase getCurrentUser error:', e));
 
-    // Restaura sessão de administrador
-    const savedAdminSession = localStorage.getItem('vaiquedacerto_admin_session');
-    if (savedAdminSession) {
-      try {
-        const parsed = JSON.parse(savedAdminSession);
-        if (parsed.user && parsed.expiresAt > Date.now() && parsed.user.email?.toLowerCase() === 'willamesbarbosaadm@gmail.com') {
-          setCurrentUser(parsed.user);
-          setIsAdmin(true);
-        } else {
-          localStorage.removeItem('vaiquedacerto_admin_session');
+      const unsubSupabase = supabaseAuth.onAuthStateChanged((sbUser, event) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setAuthModalMode('reset');
+          setIsAuthModalOpen(true);
         }
-      } catch (e) {
-        localStorage.removeItem('vaiquedacerto_admin_session');
-      }
-    }
 
-    getRedirectResult(auth).then((result) => {
-      if (result && result.user) {
-        setCurrentUser(result.user);
-        setIsAdmin(isAdminUser(result.user));
-      }
-    }).catch((e) => console.warn('Redirect auth result error in App:', e));
-
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setCurrentUser(user);
-        setIsAdmin(isAdminUser(user));
-      } else {
-        const checkSavedUser = localStorage.getItem('vaiquedacerto_user_session');
-        const checkSavedAdmin = localStorage.getItem('vaiquedacerto_admin_session');
-        if (!checkSavedUser && !checkSavedAdmin) {
+        if (sbUser) {
+          setCurrentUser(sbUser);
+          setIsAdmin(Boolean(sbUser.isAdmin));
+        } else {
           setCurrentUser(null);
           setIsAdmin(false);
         }
-      }
-    });
-    return () => unsubscribe();
+      });
+
+      return () => {
+        unsubSupabase();
+      };
+    }
   }, []);
 
   const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
@@ -170,12 +157,11 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
-      localStorage.removeItem('vaiquedacerto_user_session');
-      localStorage.removeItem('vaiquedacerto_admin_session');
-      localStorage.removeItem('vaiquedacerto_admin_user');
-      await signOut(auth);
+      if (isSupabaseConfigured) {
+        await supabaseAuth.signOut().catch(() => {});
+      }
     } catch (e) {
-      console.error(e);
+      console.error('Erro ao sair da conta:', e);
     } finally {
       setCurrentUser(null);
       setIsAdmin(false);
@@ -367,15 +353,24 @@ export default function App() {
 
   const handleTriggerSineSync = async () => {
     try {
-      const res = await fetch('/api/sine/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const data = await res.json();
-      if (data.success) {
+      const result = await triggerSineSync();
+      const data = result.data || {};
+      if (result.statusCode === 401) {
+        setToastMessage('🔒 Autenticação necessária. Faça login como administrador para sincronizar.');
+        return;
+      }
+      if (result.statusCode === 403) {
+        setToastMessage('⛔ Acesso negado. Apenas o e-mail do administrador pode sincronizar.');
+        return;
+      }
+      if (result.statusCode === 503) {
+        setToastMessage('⚠️ Serviço de autenticação indisponível no servidor.');
+        return;
+      }
+      if (result.success && data.success) {
         setToastMessage(`✅ SINE-PI sincronizado com sucesso! Data: ${data.publicationDate} • Total: ${data.teresinaJobs + data.pcdJobs} vagas (${data.newJobs} novas).`);
       } else {
-        setToastMessage(`⚠️ Sincronização SINE: ${data.errors?.join(', ') || 'Erro ao processar'}`);
+        setToastMessage(`⚠️ Sincronização SINE: ${result.error || data.errors?.join(', ') || 'Erro ao processar'}`);
       }
     } catch (e) {
       console.error(e);
@@ -634,12 +629,9 @@ export default function App() {
     setIsRefreshing(true);
     setToastMessage('Sincronizando com SINE-PI...');
     try {
-      // 1. Executa sincronização real no backend com o PDF do SINE-PI
-      const sineRes = await fetch('/api/sine/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const sineData = await sineRes.json();
+      // 1. Executa sincronização real no backend com o PDF do SINE-PI com autenticação segura
+      const result = await triggerSineSync();
+      const sineData = result.data || {};
 
       // 2. Busca novidades do Gupy
       pullNextLinkedInJob();
@@ -647,13 +639,28 @@ export default function App() {
       setCountdown(MAX_COUNTDOWN);
       setIsRefreshing(false);
 
-      if (sineData.success) {
+      if (result.statusCode === 401) {
+        setToastMessage('🔒 Sincronização SINE: Faça login como administrador para disparar a atualização.');
+        return;
+      }
+
+      if (result.statusCode === 403) {
+        setToastMessage('⛔ Sincronização SINE: Apenas o e-mail do administrador pode disparar a sincronização.');
+        return;
+      }
+
+      if (result.statusCode === 503) {
+        setToastMessage('⚠️ Serviço de autenticação indisponível no servidor.');
+        return;
+      }
+
+      if (result.success && sineData.success) {
         const totalVagas = (sineData.teresinaJobs || 0) + (sineData.pcdJobs || 0);
         setToastMessage(
           `Sincronização concluída.\n📄 PDF: ${sineData.publicationDate} | Total: ${totalVagas} vagas | Novas: ${sineData.newJobs} | Atualizadas: ${sineData.updatedJobs} | Duplicadas: ${sineData.duplicates}`
         );
       } else {
-        setToastMessage(`Sincronização SINE: ${sineData.errors?.join(', ') || 'Processo finalizado com avisos'}`);
+        setToastMessage(`Sincronização SINE: ${result.error || sineData.errors?.join(', ') || 'Processo finalizado com avisos'}`);
       }
     } catch (e: any) {
       console.error(e);
@@ -910,7 +917,10 @@ export default function App() {
           setActiveTab('gratitude');
           setIsGratitudeModalOpen(true);
         }}
-        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onOpenAuthModal={() => {
+          setAuthModalMode('login');
+          setIsAuthModalOpen(true);
+        }}
       />
 
       {/* HERO SECTION */}
@@ -1435,6 +1445,7 @@ export default function App() {
       {/* 3. Auth / Login Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
+        initialMode={authModalMode}
         onClose={() => setIsAuthModalOpen(false)}
         onShowToast={(msg) => setToastMessage(msg)}
         onLoginSuccess={(user) => {

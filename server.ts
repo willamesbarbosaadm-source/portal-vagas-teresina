@@ -1,13 +1,13 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { createServer as createViteServer } from "vite";
 import { syncSineJobs } from "./server/sineProvider.ts";
 import { syncThemosJobs } from "./server/themosProvider.ts";
 import { syncGupyJobs, fetchGupyTeresinaJobs } from "./server/gupyProvider.ts";
-import { INITIAL_SINE_JOBS } from "./src/data/sineInitialJobs.ts";
+import { requireSupabaseAdmin } from "./server/supabaseAuthHelper.ts";
+import { getServerFirestore, REAL_FIREBASE_CONFIG } from "./server/firebaseDb.ts";
 
 async function startServer() {
   const app = express();
@@ -20,50 +20,52 @@ async function startServer() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  // SINE-PI Jobs List (Firestore -> Fallback)
+  // SINE-PI Jobs List (Firestore Real - studious-rig-bxhgq)
   app.get("/api/sine/jobs", async (req, res) => {
     try {
-      const configPath = path.join(process.cwd(), "firebase-applet-config.json");
-      if (fs.existsSync(configPath)) {
-        const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-        const app = getApps().length > 0 ? getApp() : initializeApp(config);
-        const dbId = config.firestoreDatabaseId || "ai-studio-vaiquedcertoempr-2c1e0223-76a1-4104-afc9-edc49ea74413";
-        const db = getFirestore(app, dbId);
-        const snap = await getDocs(collection(db, "sine_vagas"));
-        if (!snap.empty) {
-          const firestoreJobs: any[] = [];
-          snap.forEach((docSnap) => {
-            firestoreJobs.push({ id: docSnap.id, ...docSnap.data() });
-          });
-          if (firestoreJobs.length > 0) {
-            return res.json({
-              success: true,
-              total: firestoreJobs.length,
-              data_publicacao: "23/09/2026",
-              fonte: "SINE-PI (Firestore)",
-              jobs: firestoreJobs
-            });
+      const db = getServerFirestore();
+      const snap = await getDocs(collection(db, "sine_vagas"));
+      if (!snap.empty) {
+        const firestoreJobs: any[] = [];
+        let dataPublicacao = "23/09/2026";
+        snap.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data && (data.data_publicacao || data.dataAtualizacao)) {
+            dataPublicacao = data.data_publicacao || data.dataAtualizacao || dataPublicacao;
           }
+          firestoreJobs.push({ id: docSnap.id, ...data });
+        });
+        if (firestoreJobs.length > 0) {
+          return res.json({
+            success: true,
+            total: firestoreJobs.length,
+            data_publicacao: dataPublicacao,
+            fonte: "SINE-PI (Firestore)",
+            jobs: firestoreJobs
+          });
         }
       }
-    } catch (e) {
-      console.warn("Erro ao ler sine_vagas do Firestore:", e);
+      return res.status(503).json({
+        success: false,
+        error: "Nenhuma vaga encontrada no Firestore."
+      });
+    } catch (e: any) {
+      console.error("Erro ao ler sine_vagas do Firestore:", e);
+      return res.status(503).json({
+        success: false,
+        error: "Firestore indisponível"
+      });
     }
-
-    res.json({
-      success: true,
-      total: INITIAL_SINE_JOBS.length,
-      data_publicacao: "23/09/2026",
-      fonte: "SINE-PI (Fallback Inicial)",
-      jobs: INITIAL_SINE_JOBS
-    });
   });
 
   // Protected SINE-PI Cron Endpoint
   app.get("/api/cron/sine-pi", async (req, res) => {
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret) {
+      return res.status(503).json({ error: "Serviço indisponível. CRON_SECRET não configurado no servidor." });
+    }
+
     const authHeader = req.headers.authorization;
-    const cronSecret = process.env.CRON_SECRET || "default_cron_secret_vaiquedacerto";
-    
     if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
       return res.status(401).json({ error: "Unauthorized. Invalid or missing CRON_SECRET." });
     }
@@ -81,8 +83,8 @@ async function startServer() {
     }
   });
 
-  // Manual admin SINE-PI sync trigger
-  app.post("/api/sine/sync", async (req, res) => {
+  // Manual admin SINE-PI sync trigger (Protegido por Supabase Admin / Cron Secret)
+  app.post("/api/sine/sync", requireSupabaseAdmin, async (req, res) => {
     try {
       const syncResult = await syncSineJobs();
       res.json(syncResult);
@@ -93,9 +95,12 @@ async function startServer() {
 
   // Protected Themos Vagas Cron Endpoint
   app.get("/api/cron/themos", async (req, res) => {
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret) {
+      return res.status(503).json({ error: "Serviço indisponível. CRON_SECRET não configurado no servidor." });
+    }
+
     const authHeader = req.headers.authorization;
-    const cronSecret = process.env.CRON_SECRET || "default_cron_secret_vaiquedacerto";
-    
     if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
       return res.status(401).json({ error: "Unauthorized. Invalid or missing CRON_SECRET." });
     }
@@ -113,8 +118,8 @@ async function startServer() {
     }
   });
 
-  // Manual admin Themos Vagas sync trigger
-  app.post("/api/themos/sync", async (req, res) => {
+  // Manual admin Themos Vagas sync trigger (Protegido por Supabase Admin / Cron Secret)
+  app.post("/api/themos/sync", requireSupabaseAdmin, async (req, res) => {
     try {
       const syncResult = await syncThemosJobs();
       res.json(syncResult);
@@ -133,13 +138,8 @@ async function startServer() {
 
       // Se API externa não retornou vagas, tenta o último catálogo real persistido no Firestore
       try {
-        const configPath = path.join(process.cwd(), "firebase-applet-config.json");
-        if (fs.existsSync(configPath)) {
-          const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-          const app = getApps().length > 0 ? getApp() : initializeApp(config);
-          const dbId = config.firestoreDatabaseId || "ai-studio-vaiquedcertoempr-2c1e0223-76a1-4104-afc9-edc49ea74413";
-          const db = getFirestore(app, dbId);
-          const snap = await getDocs(collection(db, "gupy_jobs"));
+        const db = getServerFirestore();
+        const snap = await getDocs(collection(db, "gupy_jobs"));
           if (!snap.empty) {
             const storedJobs: any[] = [];
             snap.forEach((docSnap) => {
@@ -158,7 +158,6 @@ async function startServer() {
               });
             }
           }
-        }
       } catch (firestoreErr) {
         console.warn("Fallback Firestore gupy_jobs error:", firestoreErr);
       }
@@ -183,9 +182,12 @@ async function startServer() {
 
   // Protected Gupy Cron Endpoint
   app.get("/api/cron/gupy", async (req, res) => {
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret) {
+      return res.status(503).json({ error: "Serviço indisponível. CRON_SECRET não configurado no servidor." });
+    }
+
     const authHeader = req.headers.authorization;
-    const cronSecret = process.env.CRON_SECRET || "default_cron_secret_vaiquedacerto";
-    
     if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
       return res.status(401).json({ error: "Unauthorized. Invalid or missing CRON_SECRET." });
     }
@@ -199,8 +201,8 @@ async function startServer() {
     }
   });
 
-  // Manual admin Gupy sync trigger
-  app.post("/api/gupy/sync", async (req, res) => {
+  // Manual admin Gupy sync trigger (Protegido por Supabase Admin / Cron Secret)
+  app.post("/api/gupy/sync", requireSupabaseAdmin, async (req, res) => {
     try {
       const syncResult = await syncGupyJobs();
       res.json(syncResult);

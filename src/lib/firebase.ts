@@ -1,15 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  signInWithPopup, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  signOut, 
-  onAuthStateChanged,
-  User 
-} from 'firebase/auth';
-import { 
   getFirestore, 
   collection, 
   doc, 
@@ -25,6 +15,7 @@ import {
   onSnapshot,
   Timestamp 
 } from 'firebase/firestore';
+
 // Safely retrieve config with strict validation against placeholder environment variables
 const REAL_FIREBASE_CONFIG = {
   projectId: "studious-rig-bxhgq",
@@ -74,19 +65,23 @@ const firebaseConfig = {
 };
 
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-export const auth = getAuth(app);
 const firestoreDbId = !isPlaceholder(import.meta.env.VITE_FIREBASE_DATABASE_ID)
   ? import.meta.env.VITE_FIREBASE_DATABASE_ID.trim()
   : REAL_FIREBASE_CONFIG.firestoreDatabaseId;
 export const db = firestoreDbId ? getFirestore(app, firestoreDbId) : getFirestore(app);
-export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({
-  prompt: 'select_account'
-});
 
-export const ADMIN_EMAIL = 'willamesbarbosaadm@gmail.com';
-
-export function isAdminUser(user: User | null): boolean {
-  if (!user || !user.email) return false;
-  return user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-}
+export {
+  collection, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  getDocs, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  query, 
+  where, 
+  orderBy, 
+  onSnapshot,
+  Timestamp
+};

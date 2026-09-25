@@ -3,6 +3,7 @@ import { X, RefreshCw, ShieldCheck, Clock, CheckCircle2, AlertTriangle, FileText
 import { SineSyncLog } from '../types/sine';
 import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { triggerSineSync } from '../services/adminApiClient';
 
 interface SineAdminModalProps {
   isOpen: boolean;
@@ -55,18 +56,31 @@ export const SineAdminModal: React.FC<SineAdminModalProps> = ({
   const handleManualSyncClick = async () => {
     setIsSyncing(true);
     try {
-      const response = await fetch('/api/sine/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const data = await response.json();
+      const result = await triggerSineSync();
+      const data = result.data || { success: false, error: result.error };
       setLastSyncResult(data);
-      onTriggerSync();
       setIsSyncing(false);
-      if (data.success) {
+
+      if (result.statusCode === 401) {
+        onShowToast('🔒 Acesso restrito. Faça login como administrador para sincronizar.');
+        return;
+      }
+
+      if (result.statusCode === 403) {
+        onShowToast('⛔ Acesso negado. Apenas o e-mail do administrador pode sincronizar.');
+        return;
+      }
+
+      if (result.statusCode === 503) {
+        onShowToast('⚠️ Serviço de autenticação indisponível no momento.');
+        return;
+      }
+
+      if (result.success && data.success) {
+        onTriggerSync();
         onShowToast(`✅ Sincronização concluída! ${data.newJobs ?? 0} novas vagas do PDF (${data.publicationDate}).`);
       } else {
-        onShowToast(`⚠️ Sincronização com aviso: ${data.errors?.join(', ') || 'Verifique os logs'}`);
+        onShowToast(`⚠️ ${result.error || data.errors?.join(', ') || 'Verifique os logs'}`);
       }
     } catch (err: any) {
       setIsSyncing(false);

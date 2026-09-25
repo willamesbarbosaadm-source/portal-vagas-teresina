@@ -11,8 +11,17 @@ function getDb() {
     const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
     if (fs.existsSync(configPath)) {
       firebaseConfigData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    } else {
+      firebaseConfigData = {
+        projectId: "studious-rig-bxhgq",
+        appId: "1:474330043803:web:a1b15dff9020cbded3bd3e",
+        apiKey: "AIzaSyC0b0I5OEIj8dIJ719hFfhN_Z2VPlGrvKw",
+        authDomain: "studious-rig-bxhgq.firebaseapp.com",
+        firestoreDatabaseId: "ai-studio-vaiquedcertoempr-2c1e0223-76a1-4104-afc9-edc49ea74413",
+        storageBucket: "studious-rig-bxhgq.firebasestorage.app",
+        messagingSenderId: "474330043803"
+      };
     }
-    if (!firebaseConfigData) return null;
     const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfigData);
     const dbId = firebaseConfigData.firestoreDatabaseId || 'ai-studio-vaiquedcertoempr-2c1e0223-76a1-4104-afc9-edc49ea74413';
     return getFirestore(app, dbId);

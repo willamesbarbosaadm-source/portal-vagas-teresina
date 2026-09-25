@@ -1,22 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import appLogo from '../assets/images/app_logo_1789757595739.jpg';
-import { X, Lock, Mail, User, Sparkles, ArrowRight, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
-import { auth, googleProvider, isAdminUser, ADMIN_EMAIL, db } from '../lib/firebase';
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signInWithPopup, 
-  signInWithRedirect, 
-  getRedirectResult, 
-  updateProfile 
-} from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { X, Lock, Mail, User, Sparkles, ArrowRight, Eye, EyeOff, AlertCircle, CheckCircle2, ArrowLeft, KeyRound } from 'lucide-react';
+import { supabaseAuth, isSupabaseConfigured } from '../services/auth';
+
+export type AuthModalMode = 'login' | 'register' | 'forgot' | 'reset';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onShowToast: (msg: string) => void;
   onLoginSuccess?: (user: any) => void;
+  initialMode?: AuthModalMode;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -24,370 +18,189 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   onShowToast,
   onLoginSuccess,
+  initialMode = 'login',
 }) => {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<AuthModalMode>(initialMode);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [infoNotice, setInfoNotice] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      setMode(initialMode);
       setError(null);
-      setInfoNotice(null);
+      setSuccessMessage(null);
+    } else {
+      setError(null);
+      setSuccessMessage(null);
+      setName('');
       setEmail('');
       setPassword('');
-      setName('');
+      setConfirmPassword('');
       setShowPassword(false);
+      setShowConfirmPassword(false);
+      setLoading(false);
     }
-  }, [isOpen]);
-
-  useEffect(() => {
-    getRedirectResult(auth).then(async (result) => {
-      if (result && result.user) {
-        const user = result.user;
-        const isAdmin = isAdminUser(user);
-        const userDocRef = doc(db, 'users', user.uid);
-        
-        await setDoc(userDocRef, {
-          uid: user.uid,
-          name: user.displayName || user.email?.split('@')[0] || 'Usuário',
-          email: user.email,
-          isAdmin,
-          lastLogin: Date.now()
-        }, { merge: true }).catch(() => {});
-
-        const sessionUser = {
-          uid: user.uid,
-          displayName: user.displayName || user.email?.split('@')[0] || 'Usuário',
-          email: user.email,
-          isAdmin
-        };
-
-        localStorage.setItem('vaiquedacerto_user_session', JSON.stringify({
-          user: sessionUser,
-          expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
-        }));
-
-        if (isAdmin) {
-          localStorage.setItem('vaiquedacerto_admin_session', JSON.stringify({
-            user: sessionUser,
-            expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
-          }));
-        }
-
-        if (onLoginSuccess) onLoginSuccess(sessionUser);
-        onShowToast(`🎉 Conectado com sucesso! ${isAdmin ? '🔑 Painel Administrador Liberado.' : ''}`);
-        onClose();
-      }
-    }).catch((err) => {
-      console.warn('Redirect auth result:', err);
-    });
-  }, [onClose, onShowToast, onLoginSuccess]);
+  }, [isOpen, initialMode]);
 
   if (!isOpen) return null;
 
-  // Autenticação universal por E-mail e Senha (para qualquer visitante, candidato ou admin)
-  const handleEmailAuth = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
-    setInfoNotice(null);
+    setSuccessMessage(null);
+
+    if (!isSupabaseConfigured) {
+      setError('Serviço de autenticação Supabase não está configurado.');
+      return;
+    }
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanPass = password.trim();
+    const cleanConfirmPass = confirmPassword.trim();
+    const cleanName = name.trim();
 
-    if (!cleanEmail || !cleanEmail.includes('@')) {
-      setError('Por favor, informe um endereço de e-mail válido.');
-      setLoading(false);
+    // 1. FLUXO: CRIAR CONTA (REGISTER)
+    if (mode === 'register') {
+      if (!cleanName) {
+        setError('Por favor, informe seu nome completo.');
+        return;
+      }
+      if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+        setError('Por favor, informe um endereço de e-mail válido.');
+        return;
+      }
+      if (cleanPass.length < 6) {
+        setError('A senha deve conter no mínimo 6 caracteres.');
+        return;
+      }
+      if (cleanPass !== cleanConfirmPass) {
+        setError('A confirmação de senha não confere com a senha informada.');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const authUser = await supabaseAuth.signUp({
+          name: cleanName,
+          email: cleanEmail,
+          password: cleanPass
+        });
+
+        if (onLoginSuccess) onLoginSuccess(authUser);
+        onShowToast(`🚀 Conta criada com sucesso! Bem-vindo(a), ${authUser.displayName || cleanName}!`);
+        onClose();
+      } catch (err: any) {
+        console.error('Supabase SignUp error:', err);
+        let msg = err.message || 'Erro ao criar conta. Tente novamente.';
+        if (msg.includes('User already registered') || msg.includes('already registered')) {
+          msg = 'Este e-mail já está cadastrado. Clique em "Fazer login" para entrar ou recupere sua senha.';
+        } else if (msg.includes('Password should be at least')) {
+          msg = 'A senha deve conter no mínimo 6 caracteres.';
+        } else if (msg.includes('valid email')) {
+          msg = 'Por favor, informe um e-mail válido.';
+        }
+        setError(msg);
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
-    if (cleanPass.length < 4) {
-      setError('A senha deve ter no mínimo 4 caracteres.');
-      setLoading(false);
+    // 2. FLUXO: ENTRAR (LOGIN)
+    if (mode === 'login') {
+      if (!cleanEmail || !cleanEmail.includes('@')) {
+        setError('Por favor, informe seu endereço de e-mail.');
+        return;
+      }
+      if (!cleanPass) {
+        setError('Por favor, informe sua senha.');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const authUser = await supabaseAuth.signIn({
+          email: cleanEmail,
+          password: cleanPass
+        });
+
+        if (onLoginSuccess) onLoginSuccess(authUser);
+        const isAdmin = authUser.isAdmin;
+        onShowToast(`👋 Bem-vindo(a) de volta, ${authUser.displayName || cleanEmail.split('@')[0]}! ${isAdmin ? '🔑 Painel Admin Ativo.' : ''}`);
+        onClose();
+      } catch (err: any) {
+        console.error('Supabase SignIn error:', err);
+        let msg = err.message || 'Erro ao realizar login. Tente novamente.';
+        if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
+          msg = 'E-mail ou senha incorretos. Verifique seus dados ou crie uma conta em "Cadastre-se grátis".';
+        } else if (msg.includes('Email not confirmed')) {
+          msg = 'Por favor, confirme seu e-mail através do link enviado no momento do cadastro.';
+        }
+        setError(msg);
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
-    const isAdmin = cleanEmail === ADMIN_EMAIL.toLowerCase();
-    const safeDocId = 'user_' + cleanEmail.replace(/[^a-z0-9]/g, '_');
-
-    try {
-      if (mode === 'login') {
-        // 1. Tenta login nativo do Firebase Auth
-        try {
-          const userCred = await signInWithEmailAndPassword(auth, cleanEmail, cleanPass);
-          const fbUser = userCred.user;
-          const userIsAdmin = isAdmin || isAdminUser(fbUser);
-
-          const sessionUser = {
-            uid: fbUser.uid,
-            displayName: fbUser.displayName || name || cleanEmail.split('@')[0],
-            email: cleanEmail,
-            isAdmin: userIsAdmin
-          };
-
-          // Salva sessão localmente
-          localStorage.setItem('vaiquedacerto_user_session', JSON.stringify({
-            user: sessionUser,
-            expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
-          }));
-          if (userIsAdmin) {
-            localStorage.setItem('vaiquedacerto_admin_session', JSON.stringify({
-              user: sessionUser,
-              expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
-            }));
-          }
-
-          // Atualiza último login no Firestore
-          setDoc(doc(db, 'users', fbUser.uid), {
-            uid: fbUser.uid,
-            email: cleanEmail,
-            name: sessionUser.displayName,
-            isAdmin: userIsAdmin,
-            lastLogin: Date.now()
-          }, { merge: true }).catch(() => {});
-
-          if (onLoginSuccess) onLoginSuccess(sessionUser);
-          onShowToast(`👋 Bem-vindo(a) de volta, ${sessionUser.displayName}! ${userIsAdmin ? '🔑 Painel Administrador Ativo.' : ''}`);
-          onClose();
-          return;
-        } catch (fbErr: any) {
-          console.warn('Firebase login attempt failed, falling back:', fbErr.code, fbErr.message);
-
-          // Se a conta não existir no Firebase Auth (auth/user-not-found, auth/invalid-credential, auth/wrong-password),
-          // ou se email/password estiver desativado no console do Firebase:
-          // Verificamos no Firestore ou criamos a sessão segura para não bloquear o usuário!
-          const userDocRef = doc(db, 'users', safeDocId);
-          const userSnap = await getDoc(userDocRef).catch(() => null);
-
-          if (userSnap && userSnap.exists()) {
-            const data = userSnap.data();
-            // Verifica senha se salva localmente
-            if (data.password && data.password !== cleanPass) {
-              setError('Senha incorreta para este e-mail. Verifique sua senha ou crie uma nova conta em "Cadastrar".');
-              setLoading(false);
-              return;
-            }
-
-            const sessionUser = {
-              uid: data.uid || safeDocId,
-              displayName: data.name || cleanEmail.split('@')[0],
-              email: cleanEmail,
-              isAdmin: Boolean(data.isAdmin || isAdmin)
-            };
-
-            localStorage.setItem('vaiquedacerto_user_session', JSON.stringify({
-              user: sessionUser,
-              expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
-            }));
-            if (sessionUser.isAdmin) {
-              localStorage.setItem('vaiquedacerto_admin_session', JSON.stringify({
-                user: sessionUser,
-                expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
-              }));
-            }
-
-            setDoc(userDocRef, { lastLogin: Date.now() }, { merge: true }).catch(() => {});
-
-            if (onLoginSuccess) onLoginSuccess(sessionUser);
-            onShowToast(`👋 Bem-vindo(a) de volta! ${sessionUser.isAdmin ? '🔑 Painel Administrador Ativo.' : ''}`);
-            onClose();
-            return;
-          }
-
-          // Se não existir, conecta e cria o usuário instantaneamente
-          const displayName = name.trim() || cleanEmail.split('@')[0];
-          const sessionUser = {
-            uid: safeDocId,
-            displayName,
-            email: cleanEmail,
-            isAdmin
-          };
-
-          // Salva no Firestore
-          await setDoc(userDocRef, {
-            uid: safeDocId,
-            name: displayName,
-            email: cleanEmail,
-            password: cleanPass,
-            isAdmin,
-            createdAt: Date.now(),
-            lastLogin: Date.now()
-          }, { merge: true }).catch(() => {});
-
-          localStorage.setItem('vaiquedacerto_user_session', JSON.stringify({
-            user: sessionUser,
-            expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
-          }));
-          if (isAdmin) {
-            localStorage.setItem('vaiquedacerto_admin_session', JSON.stringify({
-              user: sessionUser,
-              expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
-            }));
-          }
-
-          if (onLoginSuccess) onLoginSuccess(sessionUser);
-          onShowToast(`🎉 Acesso autorizado! Bem-vindo(a), ${displayName}! ${isAdmin ? '🔑 Painel Administrador Ativo.' : ''}`);
-          onClose();
-          return;
-        }
-      } else {
-        // MODO CADASTRAR (Registro de nova conta)
-        const displayName = name.trim() || cleanEmail.split('@')[0];
-        
-        try {
-          const userCred = await createUserWithEmailAndPassword(auth, cleanEmail, cleanPass);
-          const fbUser = userCred.user;
-          await updateProfile(fbUser, { displayName }).catch(() => {});
-
-          const sessionUser = {
-            uid: fbUser.uid,
-            displayName,
-            email: cleanEmail,
-            isAdmin
-          };
-
-          await setDoc(doc(db, 'users', fbUser.uid), {
-            uid: fbUser.uid,
-            name: displayName,
-            email: cleanEmail,
-            isAdmin,
-            createdAt: Date.now(),
-            lastLogin: Date.now()
-          }, { merge: true }).catch(() => {});
-
-          localStorage.setItem('vaiquedacerto_user_session', JSON.stringify({
-            user: sessionUser,
-            expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
-          }));
-          if (isAdmin) {
-            localStorage.setItem('vaiquedacerto_admin_session', JSON.stringify({
-              user: sessionUser,
-              expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
-            }));
-          }
-
-          if (onLoginSuccess) onLoginSuccess(sessionUser);
-          onShowToast(`🚀 Conta criada com sucesso! Bem-vindo(a), ${displayName}!`);
-          onClose();
-          return;
-        } catch (regErr: any) {
-          console.warn('Firebase registration error:', regErr.code);
-
-          if (regErr.code === 'auth/email-already-in-use') {
-            setError('Este e-mail já está cadastrado. Clique em "Entrar" acima.');
-            setLoading(false);
-            return;
-          }
-
-          // Fallback resiliente com Firestore para permitir cadastro mesmo se provider de email estiver desativado no console
-          const userDocRef = doc(db, 'users', safeDocId);
-          const sessionUser = {
-            uid: safeDocId,
-            displayName,
-            email: cleanEmail,
-            isAdmin
-          };
-
-          await setDoc(userDocRef, {
-            uid: safeDocId,
-            name: displayName,
-            email: cleanEmail,
-            password: cleanPass,
-            isAdmin,
-            createdAt: Date.now(),
-            lastLogin: Date.now()
-          }, { merge: true }).catch(() => {});
-
-          localStorage.setItem('vaiquedacerto_user_session', JSON.stringify({
-            user: sessionUser,
-            expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
-          }));
-          if (isAdmin) {
-            localStorage.setItem('vaiquedacerto_admin_session', JSON.stringify({
-              user: sessionUser,
-              expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
-            }));
-          }
-
-          if (onLoginSuccess) onLoginSuccess(sessionUser);
-          onShowToast(`🚀 Conta criada com sucesso! Bem-vindo(a), ${displayName}!`);
-          onClose();
-          return;
-        }
+    // 3. FLUXO: RECUPERAR SENHA (FORGOT)
+    if (mode === 'forgot') {
+      if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+        setError('Por favor, informe o e-mail da sua conta para receber o link de recuperação.');
+        return;
       }
-    } catch (err: any) {
-      console.error('Final auth error:', err);
-      setError(err.message || 'Ocorreu um erro ao processar seu acesso. Tente novamente.');
-    } finally {
-      setLoading(false);
+
+      setLoading(true);
+      try {
+        await supabaseAuth.resetPassword(cleanEmail);
+        setSuccessMessage(`Enviamos um link de recuperação para ${cleanEmail}. Verifique sua caixa de entrada e spam para redefinir sua senha.`);
+        onShowToast(`📧 Link de recuperação enviado para ${cleanEmail}!`);
+      } catch (err: any) {
+        console.error('Supabase ResetPassword error:', err);
+        let msg = err.message || 'Erro ao enviar e-mail de recuperação.';
+        if (msg.includes('rate limit')) {
+          msg = 'Muitas tentativas recentes. Por favor, aguarde alguns minutos antes de tentar novamente.';
+        }
+        setError(msg);
+      } finally {
+        setLoading(false);
+      }
+      return;
     }
-  };
 
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    setError(null);
-    setInfoNotice(null);
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      const isAdmin = isAdminUser(user);
-
-      const sessionUser = {
-        uid: user.uid,
-        displayName: user.displayName || user.email?.split('@')[0] || 'Usuário Google',
-        email: user.email,
-        isAdmin
-      };
-
-      await setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        name: sessionUser.displayName,
-        email: user.email,
-        isAdmin,
-        lastLogin: Date.now()
-      }, { merge: true }).catch(() => {});
-
-      localStorage.setItem('vaiquedacerto_user_session', JSON.stringify({
-        user: sessionUser,
-        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
-      }));
-
-      if (isAdmin) {
-        localStorage.setItem('vaiquedacerto_admin_session', JSON.stringify({
-          user: sessionUser,
-          expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
-        }));
+    // 4. FLUXO: REDEFINIR SENHA (RESET)
+    if (mode === 'reset') {
+      if (cleanPass.length < 6) {
+        setError('A nova senha deve conter no mínimo 6 caracteres.');
+        return;
+      }
+      if (cleanPass !== cleanConfirmPass) {
+        setError('A confirmação da nova senha não confere.');
+        return;
       }
 
-      if (onLoginSuccess) onLoginSuccess(sessionUser);
-      onShowToast(`🎉 Conectado com Google! ${isAdmin ? '🔑 Painel Administrador Ativo.' : ''}`);
-      onClose();
-    } catch (err: any) {
-      console.warn('Google Auth Error:', err);
-      if (err.code === 'auth/unauthorized-domain') {
-        const currentDomain = typeof window !== 'undefined' ? window.location.hostname : 'seu-dominio.vercel.app';
-        setInfoNotice(
-          `O domínio "${currentDomain}" precisa ser adicionado aos Domínios Autorizados no Console do Firebase (Authentication > Settings > Authorized domains). Enquanto isso, entre com seu e-mail e senha logo abaixo!`
-        );
-      } else if (err.code === 'auth/popup-blocked') {
-        try {
-          await signInWithRedirect(auth, googleProvider);
-          return;
-        } catch (redirErr) {
-          setError('O popup do Google foi bloqueado. Por favor, acesse preenchendo seu e-mail e senha abaixo.');
-        }
-      } else if (err.code === 'auth/popup-closed-by-user') {
-        // Fechou normalmente sem erro
-      } else {
-        setError('Não foi possível conectar com o Google. Preencha seu e-mail e senha abaixo para entrar agora.');
+      setLoading(true);
+      try {
+        await supabaseAuth.updatePassword(cleanPass);
+        setSuccessMessage('Sua senha foi redefinida com sucesso! Você já pode entrar com sua nova senha.');
+        onShowToast('✅ Senha redefinida com sucesso!');
+        setPassword('');
+        setConfirmPassword('');
+        setMode('login');
+      } catch (err: any) {
+        console.error('Supabase UpdatePassword error:', err);
+        setError(err.message || 'Erro ao redefinir senha. O link pode ter expirado.');
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
+      return;
     }
   };
 
@@ -415,196 +228,283 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             />
           </div>
           <h3 className="text-2xl font-black text-slate-900 font-display">
-            {mode === 'login' ? 'Acessar o Portal' : 'Criar Conta Grátis'}
+            {mode === 'login' && 'Entrar na Conta'}
+            {mode === 'register' && 'Criar Conta Grátis'}
+            {mode === 'forgot' && 'Recuperar Senha'}
+            {mode === 'reset' && 'Redefinir Senha'}
           </h3>
           <p className="text-slate-600 font-medium text-xs sm:text-sm mt-1">
-            {mode === 'login' 
-              ? 'Entre com seu e-mail ou conta Google' 
-              : 'Cadastre-se para salvar vagas e receber alertas'}
+            {mode === 'login' && 'Entre com seu e-mail e senha cadastrados'}
+            {mode === 'register' && 'Cadastre-se para se candidatar e salvar vagas'}
+            {mode === 'forgot' && 'Informe seu e-mail para receber as instruções de recuperação'}
+            {mode === 'reset' && 'Digite sua nova senha de acesso'}
           </p>
         </div>
 
-        {/* Mensagem informativa se Google estiver com restrição de domínio */}
-        {infoNotice && (
-          <div className="mb-4 p-3.5 bg-purple-50 border-2 border-purple-300 rounded-2xl text-purple-950 text-xs font-semibold leading-relaxed flex items-start gap-2">
-            <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
-            <p>{infoNotice}</p>
-          </div>
-        )}
-
         {/* Mensagem de Erro */}
         {error && (
-          <div className="mb-4 p-3.5 bg-red-50 border-2 border-red-500 rounded-2xl text-red-900 text-xs font-bold leading-relaxed">
+          <div className="mb-4 p-3.5 bg-red-50 border-2 border-red-500 rounded-2xl text-red-900 text-xs font-bold leading-relaxed flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
             <p>{error}</p>
           </div>
         )}
 
-        {/* Abas: Entrar / Cadastrar */}
-        <div className="flex bg-slate-100 p-1 rounded-2xl border-2 border-slate-900 mb-4">
-          <button
-            type="button"
-            onClick={() => {
-              setMode('login');
-              setError(null);
-            }}
-            className={`flex-1 py-2 text-xs font-black rounded-xl transition-all cursor-pointer ${
-              mode === 'login'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Entrar
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMode('register');
-              setError(null);
-            }}
-            className={`flex-1 py-2 text-xs font-black rounded-xl transition-all cursor-pointer ${
-              mode === 'register'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Cadastrar
-          </button>
-        </div>
+        {/* Mensagem de Sucesso */}
+        {successMessage && (
+          <div className="mb-4 p-3.5 bg-green-50 border-2 border-green-600 rounded-2xl text-green-900 text-xs font-bold leading-relaxed flex items-start gap-2">
+            <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
+            <p>{successMessage}</p>
+          </div>
+        )}
 
-        {/* Botão Google */}
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          disabled={loading}
-          className="w-full mb-4 py-3 bg-white hover:bg-slate-50 text-slate-900 font-black text-xs sm:text-sm rounded-xl border-2 border-slate-900 shadow-[3px_3px_0px_#0f172a] flex items-center justify-center gap-2.5 transition-all cursor-pointer btn-pop"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-          </svg>
-          <span>Continuar com Google</span>
-        </button>
+        {/* Abas: Entrar / Cadastrar (apenas visíveis em login e register) */}
+        {(mode === 'login' || mode === 'register') && (
+          <div className="flex bg-slate-100 p-1 rounded-2xl border-2 border-slate-900 mb-5">
+            <button
+              type="button"
+              onClick={() => {
+                setMode('login');
+                setError(null);
+                setSuccessMessage(null);
+              }}
+              className={`flex-1 py-2 text-xs font-black rounded-xl transition-all cursor-pointer ${
+                mode === 'login'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Entrar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('register');
+                setError(null);
+                setSuccessMessage(null);
+              }}
+              className={`flex-1 py-2 text-xs font-black rounded-xl transition-all cursor-pointer ${
+                mode === 'register'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Criar Conta
+            </button>
+          </div>
+        )}
 
-        <div className="relative my-4 text-center">
-          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
-          <span className="relative px-3 bg-white text-[11px] font-black uppercase text-slate-400">
-            ou acesse com seu e-mail
-          </span>
-        </div>
-
-        {/* Formulário Universal de E-mail */}
-        <form onSubmit={handleEmailAuth} className="space-y-3.5">
+        {/* Formulário Supabase Auth */}
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          
+          {/* Campo: Nome Completo (Apenas Cadastro) */}
           {mode === 'register' && (
             <div>
               <label className="block text-xs font-black text-slate-900 uppercase mb-1">
-                Seu Nome Completo
+                Nome Completo *
               </label>
               <div className="relative">
                 <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                 <input
                   type="text"
-                  required={mode === 'register'}
+                  required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: João da Silva"
+                  placeholder="Ex: Maria dos Santos"
                   className="w-full pl-10 pr-4 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-600"
                 />
               </div>
             </div>
           )}
 
-          <div>
-            <label className="block text-xs font-black text-slate-900 uppercase mb-1">
-              Endereço de E-mail
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="exemplo@gmail.com"
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-600"
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-black text-slate-900 uppercase">
-                Senha
+          {/* Campo: E-mail (Login, Register e Forgot) */}
+          {mode !== 'reset' && (
+            <div>
+              <label className="block text-xs font-black text-slate-900 uppercase mb-1">
+                Endereço de E-mail *
               </label>
-              {mode === 'register' && (
-                <span className="text-[10px] text-slate-500 font-bold">mínimo 4 caracteres</span>
-              )}
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seuemail@exemplo.com"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-600"
+                />
+              </div>
             </div>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-10 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-600"
-              />
+          )}
+
+          {/* Campo: Senha (Login, Register e Reset) */}
+          {mode !== 'forgot' && (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-black text-slate-900 uppercase">
+                  {mode === 'reset' ? 'Nova Senha *' : 'Senha *'}
+                </label>
+                {(mode === 'register' || mode === 'reset') && (
+                  <span className="text-[10px] text-slate-500 font-bold">mínimo 6 caracteres</span>
+                )}
+              </div>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-10 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-600"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Campo: Confirmar Senha (Register e Reset) */}
+          {(mode === 'register' || mode === 'reset') && (
+            <div>
+              <label className="block text-xs font-black text-slate-900 uppercase mb-1">
+                {mode === 'reset' ? 'Confirmar Nova Senha *' : 'Confirmar Senha *'}
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-10 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl text-sm font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-600"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Link: Esqueci Minha Senha (Apenas Login) */}
+          {mode === 'login' && (
+            <div className="text-right">
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600"
-                tabIndex={-1}
+                onClick={() => {
+                  setMode('forgot');
+                  setError(null);
+                  setSuccessMessage(null);
+                }}
+                className="text-xs font-bold text-purple-700 hover:text-purple-900 hover:underline cursor-pointer"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                Esqueci minha senha
               </button>
             </div>
-          </div>
+          )}
 
+          {/* Botão de Ação */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-purple-700 hover:bg-purple-800 text-white font-black text-sm rounded-xl border-2 border-slate-900 btn-pop flex items-center justify-center gap-2 mt-2 disabled:opacity-50 cursor-pointer"
+            className="w-full py-3.5 bg-purple-700 hover:bg-purple-800 text-white font-black text-sm rounded-xl border-2 border-slate-900 btn-pop flex items-center justify-center gap-2 mt-4 disabled:opacity-50 cursor-pointer shadow-[3px_3px_0px_#0f172a]"
           >
-            <Sparkles className="w-4 h-4 text-yellow-400" />
-            <span>
-              {loading 
-                ? 'Verificando...' 
-                : mode === 'login' 
-                  ? 'Entrar no Portal' 
-                  : 'Criar Minha Conta Grátis'}
-            </span>
-            <ArrowRight className="w-4 h-4" />
+            {loading ? (
+              <span>Processando...</span>
+            ) : (
+              <>
+                {mode === 'login' && (
+                  <>
+                    <Sparkles className="w-4 h-4 text-yellow-400" />
+                    <span>Entrar no Portal</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+                {mode === 'register' && (
+                  <>
+                    <Sparkles className="w-4 h-4 text-yellow-400" />
+                    <span>Criar Minha Conta Grátis</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+                {mode === 'forgot' && (
+                  <>
+                    <KeyRound className="w-4 h-4 text-yellow-400" />
+                    <span>Enviar Link de Recuperação</span>
+                  </>
+                )}
+                {mode === 'reset' && (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-green-400" />
+                    <span>Salvar Nova Senha</span>
+                  </>
+                )}
+              </>
+            )}
           </button>
         </form>
 
-        <div className="mt-4 text-center">
-          <p className="text-[11px] text-slate-500 font-medium">
-            {mode === 'login' ? (
-              <>
-                Não tem uma conta ainda?{' '}
-                <button
-                  type="button"
-                  onClick={() => setMode('register')}
-                  className="text-purple-700 font-black hover:underline cursor-pointer"
-                >
-                  Cadastre-se grátis
-                </button>
-              </>
-            ) : (
-              <>
-                Já possui conta?{' '}
-                <button
-                  type="button"
-                  onClick={() => setMode('login')}
-                  className="text-purple-700 font-black hover:underline cursor-pointer"
-                >
-                  Fazer login
-                </button>
-              </>
-            )}
-          </p>
+        {/* Links de Rodapé */}
+        <div className="mt-5 text-center pt-3 border-t border-slate-200">
+          {mode === 'login' && (
+            <p className="text-xs text-slate-600 font-medium">
+              Não tem uma conta ainda?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('register');
+                  setError(null);
+                  setSuccessMessage(null);
+                }}
+                className="text-purple-700 font-black hover:underline cursor-pointer"
+              >
+                Criar uma conta
+              </button>
+            </p>
+          )}
+
+          {mode === 'register' && (
+            <p className="text-xs text-slate-600 font-medium">
+              Já possui uma conta?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login');
+                  setError(null);
+                  setSuccessMessage(null);
+                }}
+                className="text-purple-700 font-black hover:underline cursor-pointer"
+              >
+                Fazer login
+              </button>
+            </p>
+          )}
+
+          {(mode === 'forgot' || mode === 'reset') && (
+            <button
+              type="button"
+              onClick={() => {
+                setMode('login');
+                setError(null);
+                setSuccessMessage(null);
+              }}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-purple-700 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Voltar para o login</span>
+            </button>
+          )}
         </div>
 
       </div>
