@@ -112,9 +112,7 @@ export const HeroMascotVideo: React.FC<HeroMascotVideoProps> = ({ onScrollToJobs
                 setVideoError(true);
               }}
             >
-              <source src="/tatu-animado.mp4" type="video/mp4" onError={() => setVideoError(true)} />
-              <source src="/TATU.mp4" type="video/mp4" />
-              <source src="/tatu.mp4" type="video/mp4" />
+              <source src="/MASCOTE%2002.mp4" type="video/mp4" onError={() => setVideoError(true)} />
             </video>
           )}
 
