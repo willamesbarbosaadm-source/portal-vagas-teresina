@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { initializeApp, getApps } from 'firebase-admin/app';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import type { App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import type { Auth, DecodedIdToken } from 'firebase-admin/auth';
@@ -41,16 +41,44 @@ declare global {
 
 /**
  * Inicializa a instância oficial do Firebase Admin SDK exclusivamente
- * para o projeto de Authentication: equipamento-estudantis-bxhgq
+ * para o projeto de Authentication: equipamento-estudantis-bxhgq.
+ * 
+ * Utiliza credenciais de Service Account no servidor (Vercel / Node.js)
+ * através das variáveis server-side:
+ * - FIREBASE_ADMIN_PROJECT_ID
+ * - FIREBASE_ADMIN_CLIENT_EMAIL
+ * - FIREBASE_ADMIN_PRIVATE_KEY (com substituição de "\\n" por quebras de linha reais)
  */
 const AUTH_ADMIN_APP_NAME = 'auth-admin-app';
 
 export function getAuthAdmin(): Auth {
   const existingApp = getApps().find(a => a.name === AUTH_ADMIN_APP_NAME);
-  const app: App = existingApp || initializeApp({
-    projectId: process.env.VITE_FIREBASE_AUTH_PROJECT_ID || AUTH_PROJECT_ID,
-  }, AUTH_ADMIN_APP_NAME);
+  if (existingApp) {
+    return getAuth(existingApp);
+  }
 
+  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.VITE_FIREBASE_AUTH_PROJECT_ID || AUTH_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
+  let privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
+
+  if (privateKey) {
+    // Converte literais "\n" em quebras de linha reais para RSA PEM
+    privateKey = privateKey.replace(/\\n/g, '\n');
+  }
+
+  const appOptions: { projectId: string; credential?: any } = {
+    projectId
+  };
+
+  if (clientEmail && privateKey) {
+    appOptions.credential = cert({
+      projectId,
+      clientEmail,
+      privateKey
+    });
+  }
+
+  const app: App = initializeApp(appOptions, AUTH_ADMIN_APP_NAME);
   return getAuth(app);
 }
 
@@ -92,7 +120,7 @@ export async function validateFirebaseToken(
     const decodedToken: DecodedIdToken = await authAdmin.verifyIdToken(cleanToken);
 
     // Validação de correspondência explícita do Project ID (segurança adicional)
-    const expectedProjectId = process.env.VITE_FIREBASE_AUTH_PROJECT_ID || AUTH_PROJECT_ID;
+    const expectedProjectId = process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.VITE_FIREBASE_AUTH_PROJECT_ID || AUTH_PROJECT_ID;
     if (decodedToken.aud !== expectedProjectId) {
       return {
         ok: false,

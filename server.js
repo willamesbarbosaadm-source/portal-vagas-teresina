@@ -728,16 +728,33 @@ async function syncGupyJobs() {
 }
 
 // server/firebaseAuthHelper.ts
-import { initializeApp as initializeApp2, getApps as getApps2 } from "firebase-admin/app";
+import { initializeApp as initializeApp2, getApps as getApps2, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 var ADMIN_EMAIL = "willamesbarbosaadm@gmail.com";
 var AUTH_PROJECT_ID = "equipamento-estudantis-bxhgq";
 var AUTH_ADMIN_APP_NAME = "auth-admin-app";
 function getAuthAdmin() {
   const existingApp = getApps2().find((a) => a.name === AUTH_ADMIN_APP_NAME);
-  const app = existingApp || initializeApp2({
-    projectId: process.env.VITE_FIREBASE_AUTH_PROJECT_ID || AUTH_PROJECT_ID
-  }, AUTH_ADMIN_APP_NAME);
+  if (existingApp) {
+    return getAuth(existingApp);
+  }
+  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.VITE_FIREBASE_AUTH_PROJECT_ID || AUTH_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
+  let privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
+  if (privateKey) {
+    privateKey = privateKey.replace(/\\n/g, "\n");
+  }
+  const appOptions = {
+    projectId
+  };
+  if (clientEmail && privateKey) {
+    appOptions.credential = cert({
+      projectId,
+      clientEmail,
+      privateKey
+    });
+  }
+  const app = initializeApp2(appOptions, AUTH_ADMIN_APP_NAME);
   return getAuth(app);
 }
 function isAuthorizedAdmin(email) {
@@ -756,7 +773,7 @@ async function validateFirebaseToken(token, options) {
   try {
     const authAdmin = getAuthAdmin();
     const decodedToken = await authAdmin.verifyIdToken(cleanToken);
-    const expectedProjectId = process.env.VITE_FIREBASE_AUTH_PROJECT_ID || AUTH_PROJECT_ID;
+    const expectedProjectId = process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.VITE_FIREBASE_AUTH_PROJECT_ID || AUTH_PROJECT_ID;
     if (decodedToken.aud !== expectedProjectId) {
       return {
         ok: false,
