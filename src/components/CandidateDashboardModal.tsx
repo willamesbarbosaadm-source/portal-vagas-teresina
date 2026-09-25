@@ -180,6 +180,7 @@ export function CandidateDashboardModal({
       }
 
       let extractedData: any = null;
+      let apiData: any = null;
 
       try {
         const response = await fetch('/api/candidate/resume', {
@@ -189,15 +190,14 @@ export function CandidateDashboardModal({
         });
 
         const responseText = await response.text().catch(() => '');
-        let data: any = null;
         try {
-          data = responseText ? JSON.parse(responseText) : null;
+          apiData = responseText ? JSON.parse(responseText) : null;
         } catch (parseErr) {
-          data = null;
+          apiData = null;
         }
 
-        if (response.ok && data && data.success && data.extracted) {
-          extractedData = data.extracted;
+        if (response.ok && apiData && apiData.success && apiData.extracted) {
+          extractedData = apiData.extracted;
         }
       } catch (netErr) {
         console.warn('Tentando extração local de fallback:', netErr);
@@ -225,8 +225,8 @@ export function CandidateDashboardModal({
       }
 
       setUploadSuccessMsg('Dados extraídos com sucesso • PDF processado com IA');
-      if (data.warning) setWarningMsg(data.warning);
-      setDiagnosticsData(data.diagnostics);
+      if (apiData?.warning) setWarningMsg(apiData.warning);
+      if (apiData?.diagnostics) setDiagnosticsData(apiData.diagnostics);
       setToastMessage('✨ Perfil preenchido com os dados do seu currículo PDF!');
 
       // Transiciona imediatamente para a aba de Perfil para o candidato visualizar os campos preenchidos
