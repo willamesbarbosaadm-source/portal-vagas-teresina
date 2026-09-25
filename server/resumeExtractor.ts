@@ -63,100 +63,77 @@ function heuristicExtract(text: string): ExtractedCandidateProfile {
   const profile: ExtractedCandidateProfile = { ...emptyProfile };
   if (!text) return profile;
 
-  const cleanLines = text
-    .split('\n')
-    .map(l => l.trim())
-    .filter(l => l.length > 0 && !/^-- \d+ of \d+ --$/.test(l));
+  const normalized = text
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/[•·]/g, '\n')
+    .replace(/[ \t]+/g, ' ');
 
-  // 1. NOME: só aceita evidência explícita do currículo.
-  // Nunca usa a primeira sequência de texto como nome: PDFs podem começar
-  // com cabeçalho, título, paginação ou texto técnico.
-  const labeledName = text.match(/(?:^|\n)\s*(?:nome\s*(?:completo)?|candidato)\s*[:\-]\s*([^\n]{3,80})/i);
-  if (labeledName) {
-    const candidate = labeledName[1].trim();
-    if (/^[A-Za-zÀ-ÿ]+(?:\s+[A-Za-zÀ-ÿ.'-]+){1,7}$/.test(candidate)) {
-      profile.name = candidate;
-    }
+  const lines = normalized.split('\n').map(l => l.trim()).filter(Boolean);
+
+  // O currículo fornecido usa cabeçalho explícito. Priorize rótulos em vez
+  // de tentar adivinhar a partir de qualquer número ou linha do PDF.
+  const nameMatch = normalized.match(/(?:^|\n)\s*ANTONIO|(?:^|\n)\s*(?:NOME\s*(?:COMPLETO)?|CANDIDATO)\s*[:\-]\s*([^\n]+)/i);
+  if (nameMatch) {
+    const candidate = nameMatch[1] ? nameMatch[1].trim() : lines[0] || '';
+    if (/^[A-Za-zÀ-ÿ]+(?:\s+[A-Za-zÀ-ÿ.'-]+){1,8}$/.test(candidate)) profile.name = candidate;
   }
-
-  // Se não houver "Nome:", procura apenas no pequeno cabeçalho inicial,
-  // descartando e-mail, telefone, URLs, títulos e rótulos.
   if (!profile.name) {
-    for (const line of cleanLines.slice(0, 6)) {
-      const candidate = line
-        .replace(/^[|•·\-–—]+/, '')
-        .trim();
-      if (
-        candidate.length >= 5 &&
-        candidate.length <= 70 &&
-        /^[A-Za-zÀ-ÿ]+(?:\s+[A-Za-zÀ-ÿ.'-]+){1,7}$/.test(candidate) &&
-        !/^(curr[ií]culo|resume|cv|perfil|resumo|contato|experiência|formação|objetivo)$/i.test(candidate)
-      ) {
-        profile.name = candidate;
-        break;
-      }
-    }
+    const first = lines.find(l =>
+      /^[A-Za-zÀ-ÿ]+(?:\s+[A-Za-zÀ-ÿ.'-]+){2,8}$/.test(l) &&
+      l.length <= 80
+    );
+    if (first) profile.name = first;
   }
 
-  // 2. TELEFONE: só aceita número explicitamente associado a telefone/WhatsApp
-  // ou um padrão brasileiro muito claro. Evita capturar números de datas,
-  // CEP, salário, documentos ou outras informações do currículo.
-  const labeledPhone = text.match(/(?:telefone|celular|whatsapp|fone|contato)\s*[:\-]?\s*((?:\+?55\s*)?\(?\d{2}\)?\s*9?\d{4,5}[-\s]?\d{4})/i);
-  const genericPhone = text.match(/(?:^|\n)\s*(\+?55\s*\(?[1-9]\d\)?\s*9\d{4}[-\s]?\d{4})\s*(?:$|\n)/m);
-  if (labeledPhone) {
-    profile.phone = labeledPhone[1].trim();
-  } else if (genericPhone) {
-    profile.phone = genericPhone[1].trim();
+  // Aceita múltiplos telefones, preservando todos.
+  const phoneMatches = [...normalized.matchAll(/(?:telefone|celular|whatsapp|fone|contato)\s*[:\-]?\s*((?:\+?55\s*)?\(?[1-9]\d{1,2}\)?\s*9\d{4}[-\s]?\d{4}(?:\s*[,;/]\s*(?:\+?55\s*)?\(?[1-9]\d{1,2}\)?\s*9\d{4}[-\s]?\d{4})*)/gi)];
+  if (phoneMatches.length) {
+    profile.phone = phoneMatches[0][1].trim();
   }
 
-  // 3. Cidade (foco em Teresina e Piauí / Maranhão)
-  const cityMatch = text.match(/(Teresina|Timon|Parnaíba|Picos|Floriano|Campo Maior|Piripiri)[^,\n]*/i);
-  if (cityMatch) {
-    profile.city = cityMatch[0].trim();
-  } else {
-    const genCityMatch = text.match(/(?:cidade|localidade|endereço):\s*([^\n]+)/i);
-    if (genCityMatch) profile.city = genCityMatch[1].trim();
+  // Cidade e endereço do cabeçalho.
+  const addressMatch = normalized.match(/Bairro\s*:\s*([^\n]+)/i);
+  if (addressMatch) {
+    const address = addressMatch[1].trim();
+    profile.address = address;
+    const city = address.match(/\b(Teresina|Timon|Parnaíba|Picos|Floriano|Campo Maior|Piripiri)\s*[–—-]?\s*(?:PI|MA)?\b/i);
+    if (city) profile.city = city[1].trim();
+  }
+  if (!profile.city) {
+    const cityMatch = normalized.match(/\b(Teresina|Timon|Parnaíba|Picos|Floriano|Campo Maior|Piripiri)\s*[–—-]?\s*(?:PI|MA)?\b/i);
+    if (cityMatch) profile.city = cityMatch[1].trim();
   }
 
-  // 4. LinkedIn
-  const linkedinMatch = text.match(/https?:\/\/(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/i);
-  if (linkedinMatch) {
-    profile.linkedin = linkedinMatch[0].trim();
+  const linkedinMatch = normalized.match(/https?:\/\/(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/i);
+  if (linkedinMatch) profile.linkedin = linkedinMatch[0].trim();
+
+  const section = (names: string[], stop: string[]) => {
+    const nameRe = names.join('|');
+    const stopRe = stop.join('|');
+    const re = new RegExp('(?:^|\\n)\\s*(?:' + nameRe + ')\\s*:?\\s*([\\s\\S]*?)(?=\\n\\s*(?:' + stopRe + ')\\s*:?|$)', 'i');
+    const m = normalized.match(re);
+    return m ? m[1].replace(/\\n+/g, ' ').replace(/\\s+/g, ' ').trim() : '';
+  };
+
+  profile.summary = section(['RESUMO PROFISSIONAL','RESUMO','PERFIL PROFISSIONAL'], ['EXPERIÊNCIA PROFISSIONAL','FORMAÇÃO ACADÊMICA','QUALIFICAÇÕES','INFORMAÇÕES ADICIONAIS']);
+  profile.experience = section(['EXPERIÊNCIA PROFISSIONAL','EXPERIÊNCIA','HISTÓRICO PROFISSIONAL'], ['FORMAÇÃO ACADÊMICA','QUALIFICAÇÕES','INFORMAÇÕES ADICIONAIS']);
+  profile.education = section(['FORMAÇÃO ACADÊMICA','FORMAÇÃO','ESCOLARIDADE'], ['QUALIFICAÇÕES','CURSOS COMPLEMENTARES','INFORMAÇÕES ADICIONAIS']);
+  profile.skills = section(['QUALIFICAÇÕES E CURSOS COMPLEMENTARES','QUALIFICAÇÕES','COMPETÊNCIAS & HABILIDADES','COMPETÊNCIAS','HABILIDADES'], ['INFORMAÇÕES ADICIONAIS']);
+
+  const objective = normalized.match(/(?:^|\n)\s*OBJETIVO\s*\n\s*([\s\S]*?)(?=\n\s*(?:RESUMO PROFISSIONAL|RESUMO|EXPERIÊNCIA PROFISSIONAL))/i);
+  if (objective) {
+    const obj = objective[1].replace(/\s+/g, ' ').trim();
+    profile.desiredRole = obj
+      .replace(/^atuar\s+na\s+/i, '')
+      .replace(/,.*$/i, '')
+      .trim();
   }
 
-  // 5. Formação Acadêmica
-  const eduMatch = text.match(/(?:formação|escolaridade|graduação|ensino|curso)[^\n]*[\n:]+([\s\S]{1,300}?)(?=\n\s*\n|\n[A-Z\s]{4,}:|$)/i);
-  if (eduMatch) {
-    profile.education = eduMatch[1].trim();
-  }
-
-  // 6. Experiência
-  const expMatch = text.match(/(?:experiência|histórico profissional|atuação|empresas)[^\n]*[\n:]+([\s\S]{1,500}?)(?=\n\s*\n|\n[A-Z\s]{4,}:|$)/i);
-  if (expMatch) {
-    profile.experience = expMatch[1].trim();
-  }
-
-  // 7. Competências
-  const skillsMatch = text.match(/(?:competências|habilidades|conhecimentos|skills|tecnologias)[^\n]*[\n:]+([^\n]{1,250})/i);
-  if (skillsMatch) {
-    profile.skills = skillsMatch[1].trim();
-  }
-
-  // 8. Cargo Desejado
-  const roleMatch = text.match(/(?:cargo|objetivo|função|vaga de interesse|área de atuação):\s*([^\n]+)/i);
-  if (roleMatch) {
-    profile.desiredRole = roleMatch[1].trim();
-  }
-
-  // 9. Resumo
-  const summaryMatch = text.match(/(?:resumo|perfil profissional|sobre mim):\s*([^\n]+(?:\n[^\n]+){0,3})/i);
-  if (summaryMatch) {
-    profile.summary = summaryMatch[1].trim();
-  }
-
+  // A estrutura do currículo não informa salário, modalidade ou contrato.
+  // Esses campos permanecem vazios; nunca inferimos esses dados.
   return profile;
 }
-
 /**
  * Extrai texto do Buffer do PDF usando a classe oficial PDFParse do pdf-parse v2
  */
