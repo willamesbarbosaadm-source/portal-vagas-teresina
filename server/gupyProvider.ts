@@ -283,6 +283,10 @@ export async function fetchGupyTeresinaJobs(): Promise<ConvertedGupyJob[]> {
       uniqueJobs.push(converted);
     }
 
+    // Garantia local de ordenação: mais recentes primeiro,
+    // independentemente da ordem devolvida pela API.
+    uniqueJobs.sort((a, b) => b.timestamp - a.timestamp);
+
     console.log(`[GupyProvider] ${uniqueJobs.length} vagas de Teresina/Remoto validadas do Portal Gupy.`);
     return uniqueJobs;
   } catch (err: any) {
