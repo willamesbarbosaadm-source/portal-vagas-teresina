@@ -117,7 +117,7 @@ export const HeroMascotVideo: React.FC<HeroMascotVideoProps> = ({ onScrollToJobs
           )}
 
           {/* Badge flutuante interativa */}
-          <div className="absolute bottom-1 inset-x-3 py-1 px-1.5 bg-slate-950/90 backdrop-blur-md border border-yellow-400/80 rounded-2xl text-center shadow-lg z-10">
+          <div className="absolute bottom-2 inset-x-0 text-center z-10 pointer-events-none">
             <span className="text-[7px] sm:text-[8px] font-black text-yellow-300 uppercase tracking-wide flex items-center justify-center text-center">
               MASCOTE OFICIAL
             </span>
