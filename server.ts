@@ -39,8 +39,9 @@ async function startServer() {
   });
 
   // Candidate Resume Parsing & Profile Persistence Endpoint
+  app.options(["/api/candidate/resume", "/api/candidate/resume/"], (req, res) => res.sendStatus(204));
   app.post(
-    "/api/candidate/resume",
+    ["/api/candidate/resume", "/api/candidate/resume/"],
     (req: express.Request, res: express.Response, next: express.NextFunction) => {
       upload.single("resume")(req, res, (err) => {
         if (err) {

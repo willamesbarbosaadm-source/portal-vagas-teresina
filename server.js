@@ -1123,8 +1123,9 @@ async function startServer() {
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   });
+  app.options(["/api/candidate/resume", "/api/candidate/resume/"], (req, res) => res.sendStatus(204));
   app.post(
-    "/api/candidate/resume",
+    ["/api/candidate/resume", "/api/candidate/resume/"],
     (req, res, next) => {
       upload.single("resume")(req, res, (err) => {
         if (err) {

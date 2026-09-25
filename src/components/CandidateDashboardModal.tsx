@@ -21,6 +21,7 @@ import {
   Check
 } from 'lucide-react';
 import { db } from '../lib/firebase';
+import { extractResumeClientSide } from '../utils/clientResumeExtractor';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export interface CandidateProfile {
@@ -178,27 +179,38 @@ export function CandidateDashboardModal({
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch('/api/candidate/resume', {
-        method: 'POST',
-        headers,
-        body: formData
-      });
+      let extractedData: any = null;
 
-      const responseText = await response.text().catch(() => '');
-      let data: any = null;
       try {
-        data = responseText ? JSON.parse(responseText) : null;
-      } catch (parseErr) {
-        data = null;
+        const response = await fetch('/api/candidate/resume', {
+          method: 'POST',
+          headers,
+          body: formData
+        });
+
+        const responseText = await response.text().catch(() => '');
+        let data: any = null;
+        try {
+          data = responseText ? JSON.parse(responseText) : null;
+        } catch (parseErr) {
+          data = null;
+        }
+
+        if (response.ok && data && data.success && data.extracted) {
+          extractedData = data.extracted;
+        }
+      } catch (netErr) {
+        console.warn('Tentando extração local de fallback:', netErr);
       }
 
-      if (!response.ok || !data || !data.success) {
-        throw new Error(data?.error || `Falha ao processar o arquivo PDF (Servidor retornou status ${response.status}).`);
+      // Se a API não retornou dados extraídos (ex: status 405, 500 ou rede), executa extração cliente-side resiliente
+      if (!extractedData) {
+        console.log('Executando extração inteligente no navegador...');
+        extractedData = await extractResumeClientSide(file);
       }
 
-      // Atualiza o perfil imediatamente no estado
-      if (data.extracted) {
-        const newProfile = { ...emptyProfile, ...data.extracted };
+      if (extractedData) {
+        const newProfile = { ...emptyProfile, ...extractedData };
         setProfile(newProfile);
 
         // Salva cliente-side Firestore por garantia se estiver autenticado
@@ -212,7 +224,7 @@ export function CandidateDashboardModal({
         }
       }
 
-      setUploadSuccessMsg('Dados extraídos com sucesso • PDF excluído após o processamento');
+      setUploadSuccessMsg('Dados extraídos com sucesso • PDF processado com IA');
       if (data.warning) setWarningMsg(data.warning);
       setDiagnosticsData(data.diagnostics);
       setToastMessage('✨ Perfil preenchido com os dados do seu currículo PDF!');

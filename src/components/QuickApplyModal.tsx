@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Send, FileUp, Sparkles, Phone, Mail, User, Globe, CheckCircle } from 'lucide-react';
 import { Job } from '../types';
+import { extractResumeClientSide } from '../utils/clientResumeExtractor';
 
 interface QuickApplyModalProps {
   job: Job | null;
@@ -31,26 +32,40 @@ export const QuickApplyModal: React.FC<QuickApplyModalProps> = ({
 
       if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
         try {
-          const formData = new FormData();
-          formData.append('resume', file);
-          const res = await fetch('/api/candidate/resume', {
-            method: 'POST',
-            body: formData
-          });
-          const resText = await res.text().catch(() => '');
-          let data: any = null;
+          let extracted: any = null;
+
           try {
-            data = resText ? JSON.parse(resText) : null;
-          } catch (e) {
-            data = null;
+            const formData = new FormData();
+            formData.append('resume', file);
+            const res = await fetch('/api/candidate/resume', {
+              method: 'POST',
+              body: formData
+            });
+            const resText = await res.text().catch(() => '');
+            let data: any = null;
+            try {
+              data = resText ? JSON.parse(resText) : null;
+            } catch (e) {
+              data = null;
+            }
+            if (data && data.success && data.extracted) {
+              extracted = data.extracted;
+            }
+          } catch (apiErr) {
+            console.warn('API de extração rápida indisponível, usando cliente:', apiErr);
           }
-          if (data && data.success && data.extracted) {
-            if (data.extracted.name && !candidateName) setCandidateName(data.extracted.name);
-            if (data.extracted.phone && !candidatePhone) setCandidatePhone(data.extracted.phone);
-            if (data.extracted.linkedin && !candidatePortfolio) setCandidatePortfolio(data.extracted.linkedin);
+
+          if (!extracted) {
+            extracted = await extractResumeClientSide(file);
+          }
+
+          if (extracted) {
+            if (extracted.name && !candidateName) setCandidateName(extracted.name);
+            if (extracted.phone && !candidatePhone) setCandidatePhone(extracted.phone);
+            if (extracted.linkedin && !candidatePortfolio) setCandidatePortfolio(extracted.linkedin);
           }
         } catch (err) {
-          console.warn('Erro na extração rápida do currículo:', err);
+          console.warn('Erro na extração do currículo:', err);
         }
       }
     }
