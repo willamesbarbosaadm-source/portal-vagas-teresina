@@ -420,6 +420,58 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Carrega vagas recentes do Themos Vagas já processadas no servidor.
+  // O candidato usa o e-mail/link direto da publicação, nunca o Themos como destino.
+  useEffect(() => {
+    fetch('/api/themos/jobs')
+      .then(res => res.ok ? res.json().catch(() => null) : null)
+      .then(data => {
+        if (!data?.success || !Array.isArray(data.jobs)) return;
+
+        const themosJobs: Job[] = data.jobs
+          .filter((j: any) => j?.id && j?.title && j?.publicationDateTime)
+          .map((j: any) => ({
+            id: `themos_${j.id}`,
+            title: j.title,
+            company: j.company || 'Não informado na publicação oficial',
+            companyInitials: (j.company || 'TV').split(/\\s+/).filter(Boolean).slice(0, 2).map((p: string) => p[0]).join('').toUpperCase(),
+            companyColor: 'bg-slate-900',
+            location: j.location || 'Teresina - PI',
+            workMode: j.workMode || 'Não informado na publicação oficial',
+            contractType: j.contractType || 'Não informado na publicação oficial',
+            experienceLevel: j.experience || 'Não informado na publicação oficial',
+            category: 'Não informado na publicação oficial',
+            salary: j.salary || 'Não informado na publicação oficial',
+            description: j.description || j.details || 'Não informado na publicação oficial',
+            requirements: Array.isArray(j.requirements) ? j.requirements : [],
+            benefits: Array.isArray(j.benefits) ? j.benefits : [],
+            tags: ['Themos Vagas', 'Teresina'],
+            postedAt: new Date(Number(j.publicationDateTime)).toLocaleDateString('pt-BR'),
+            timestamp: Number(j.publicationDateTime),
+            publishedDate: j.publicationDate,
+            applicationUrl: j.applicationUrl || (j.contactEmail ? `mailto:${j.contactEmail.split(',')[0].trim()}` : ''),
+            contactEmail: j.contactEmail,
+            viewsCount: 0,
+            source: 'Themos Vagas',
+            sourceUrl: j.sourceUrl,
+            isNew: Date.now() - Number(j.publicationDateTime) <= 24 * 60 * 60 * 1000
+          }));
+
+        setJobs(prev => {
+          const withoutThemos = prev.filter(j => j.source !== 'Themos Vagas');
+          const merged = [...themosJobs, ...withoutThemos];
+          merged.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+          try {
+            localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(merged));
+          } catch (e) {
+            console.error(e);
+          }
+          return merged;
+        });
+      })
+      .catch(err => console.warn('Themos jobs load error:', err));
+  }, []);
+
   // Active view tab
   const [activeTab, setActiveTab] = useState<'jobs' | 'gratitude' | 'saved'>('jobs');
 
