@@ -30,7 +30,6 @@ async function startServer() {
   // Candidate Resume Parsing & Profile Persistence Endpoint
   app.post(
     "/api/candidate/resume",
-    requireAuthenticatedUser(),
     upload.single("resume"),
     async (req: express.Request, res: express.Response) => {
       try {
@@ -42,51 +41,60 @@ async function startServer() {
           });
         }
 
-        const uid = req.firebaseUser?.id;
-        if (!uid) {
-          return res.status(401).json({
-            success: false,
-            error: "Usuário não autenticado."
-          });
+        // Identifica se há token Bearer na requisição
+        let uid: string | null = null;
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+          const token = authHeader.replace(/^Bearer\s+/, "").trim();
+          if (token) {
+            try {
+              const validation = await validateFirebaseToken(token);
+              if (validation.ok && validation.user?.id) {
+                uid = validation.user.id;
+              }
+            } catch (tokErr) {
+              console.warn("[RESUME_UPLOAD] Token de autorização não validado:", tokErr);
+            }
+          }
         }
 
-        // Extrai perfil do PDF
+        // Extrai perfil do PDF via Gemini 2.5 Flash
         const extraction = await extractCandidateProfileFromPdf(file.buffer, file.originalname);
 
-        // Instancia o Firestore oficial do servidor (studious-rig-bxhgq)
-        const db = getServerFirestore();
-        const userDocRef = doc(db, "users", uid);
+        let verifiedProfile = extraction.extracted;
+        let maskedUid = uid ? (uid.length > 8 ? `${uid.substring(0, 4)}...${uid.substring(uid.length - 4)}` : uid) : "guest_candidate";
+        let verifiedInFirestore = false;
 
-        // Obtém perfil existente para merge limpo
-        let existingProfile = {};
-        try {
-          const snapBefore = await getDoc(userDocRef);
-          if (snapBefore.exists()) {
-            existingProfile = snapBefore.data()?.profile || {};
+        // Se houver usuário autenticado, persiste e verifica no Firestore
+        if (uid) {
+          try {
+            const db = getServerFirestore();
+            const userDocRef = doc(db, "users", uid);
+
+            let existingProfile = {};
+            const snapBefore = await getDoc(userDocRef);
+            if (snapBefore.exists()) {
+              existingProfile = snapBefore.data()?.profile || {};
+            }
+
+            const mergedProfile = {
+              ...existingProfile,
+              ...extraction.extracted,
+              updatedAt: new Date().toISOString()
+            };
+
+            await setDoc(userDocRef, { profile: mergedProfile }, { merge: true });
+
+            const savedSnap = await getDoc(userDocRef);
+            if (savedSnap.exists()) {
+              verifiedProfile = savedSnap.data()?.profile || mergedProfile;
+              verifiedInFirestore = true;
+            }
+          } catch (dbErr) {
+            console.warn("[RESUME_UPLOAD] Falha na persistência Firestore:", dbErr);
           }
-        } catch (readErr) {
-          console.warn("[RESUME_UPLOAD] Erro ao ler documento prévio do usuário:", readErr);
         }
 
-        // Combina perfil extraído garantindo que campos preenchidos tenham prioridade
-        const mergedProfile = {
-          ...existingProfile,
-          ...extraction.extracted,
-          updatedAt: new Date().toISOString()
-        };
-
-        // Salva no Firestore
-        await setDoc(userDocRef, { profile: mergedProfile }, { merge: true });
-
-        // Leitura imediata de verificação no Firestore (Consistência)
-        const savedSnap = await getDoc(userDocRef);
-        const savedData = savedSnap.exists() ? savedSnap.data() : null;
-        const verifiedProfile = savedData?.profile || mergedProfile;
-
-        // Máscara segura do UID
-        const maskedUid = uid.length > 8 ? `${uid.substring(0, 4)}...${uid.substring(uid.length - 4)}` : uid;
-
-        // DIAGNÓSTICO OBRIGATÓRIO SEGURO (Sem vazar chaves)
         console.log("==========================================");
         console.log("📊 DIAGNÓSTICO DE PROCESSAMENTO DE CURRÍCULO");
         console.log("==========================================");
@@ -94,19 +102,14 @@ async function startServer() {
         console.log(`Tamanho: ${(file.size / 1024).toFixed(1)} KB`);
         console.log(`MIME type: ${file.mimetype}`);
         console.log(`Texto extraído: ${extraction.rawTextLength} caracteres`);
-        console.log(`Primeiros 300 caracteres: "${extraction.sampleText.substring(0, 150)}..."`);
         console.log(`Quantidade de campos preenchidos: ${extraction.filledFieldsCount}`);
         console.log(`Campos preenchidos: ${extraction.filledFieldsList.join(", ")}`);
         console.log(`UID: ${maskedUid}`);
-        console.log(`Firestore Project: ${REAL_FIREBASE_CONFIG.projectId}`);
-        console.log(`Firestore Database: ${REAL_FIREBASE_CONFIG.firestoreDatabaseId}`);
-        console.log(`Documento Firestore: users/${maskedUid}`);
-        console.log(`Verificação de Leitura Firestore: ${savedSnap.exists() ? "SUCESSO" : "FALHA"}`);
         console.log("==========================================");
 
         return res.json({
           success: true,
-          message: "Dados extraídos com sucesso • PDF excluído após o processamento",
+          message: "Dados extraídos com sucesso • PDF processado com IA",
           extracted: verifiedProfile,
           warning: extraction.warning,
           diagnostics: {
@@ -117,8 +120,8 @@ async function startServer() {
             filledFieldsList: extraction.filledFieldsList,
             maskedUid,
             projectId: REAL_FIREBASE_CONFIG.projectId,
-            firestorePath: `users/${maskedUid}`,
-            verifiedInFirestore: savedSnap.exists()
+            firestorePath: uid ? `users/${maskedUid}` : "guest_memory",
+            verifiedInFirestore
           }
         });
       } catch (err: any) {

@@ -762,7 +762,7 @@ function isAuthorizedAdmin(email) {
   if (!email) return false;
   return email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim();
 }
-async function validateFirebaseToken(token, options) {
+async function validateFirebaseToken2(token, options) {
   if (!token || typeof token !== "string" || token.trim().length === 0) {
     return { ok: false, status: 401, error: "Token ausente ou inv\xE1lido." };
   }
@@ -853,7 +853,7 @@ async function requireFirebaseAdmin(req, res, next) {
     return;
   }
   const token = authHeader.replace(/^Bearer\s+/, "").trim();
-  const validation = await validateFirebaseToken(token);
+  const validation = await validateFirebaseToken2(token);
   if (!validation.ok) {
     res.status(validation.status).json({
       success: false,
@@ -882,7 +882,7 @@ function requireAuthenticatedUser(options) {
       return;
     }
     const token = authHeader.replace(/^Bearer\s+/, "").trim();
-    const validation = await validateFirebaseToken(token, {
+    const validation = await validateFirebaseToken2(token, {
       requireEmailVerified: options?.requireEmailVerified ?? false
     });
     if (!validation.ok) {
@@ -1102,7 +1102,6 @@ async function startServer() {
   });
   app.post(
     "/api/candidate/resume",
-    requireAuthenticatedUser(),
     upload.single("resume"),
     async (req, res) => {
       try {
@@ -1113,35 +1112,49 @@ async function startServer() {
             error: "Nenhum arquivo PDF enviado ou formato inv\xE1lido."
           });
         }
-        const uid = req.firebaseUser?.id;
-        if (!uid) {
-          return res.status(401).json({
-            success: false,
-            error: "Usu\xE1rio n\xE3o autenticado."
-          });
+        let uid = null;
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+          const token = authHeader.replace(/^Bearer\s+/, "").trim();
+          if (token) {
+            try {
+              const validation = await validateFirebaseToken(token);
+              if (validation.ok && validation.user?.id) {
+                uid = validation.user.id;
+              }
+            } catch (tokErr) {
+              console.warn("[RESUME_UPLOAD] Token de autoriza\xE7\xE3o n\xE3o validado:", tokErr);
+            }
+          }
         }
         const extraction = await extractCandidateProfileFromPdf(file.buffer, file.originalname);
-        const db = getServerFirestore();
-        const userDocRef = doc4(db, "users", uid);
-        let existingProfile = {};
-        try {
-          const snapBefore = await getDoc(userDocRef);
-          if (snapBefore.exists()) {
-            existingProfile = snapBefore.data()?.profile || {};
+        let verifiedProfile = extraction.extracted;
+        let maskedUid = uid ? uid.length > 8 ? `${uid.substring(0, 4)}...${uid.substring(uid.length - 4)}` : uid : "guest_candidate";
+        let verifiedInFirestore = false;
+        if (uid) {
+          try {
+            const db = getServerFirestore();
+            const userDocRef = doc4(db, "users", uid);
+            let existingProfile = {};
+            const snapBefore = await getDoc(userDocRef);
+            if (snapBefore.exists()) {
+              existingProfile = snapBefore.data()?.profile || {};
+            }
+            const mergedProfile = {
+              ...existingProfile,
+              ...extraction.extracted,
+              updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+            };
+            await setDoc4(userDocRef, { profile: mergedProfile }, { merge: true });
+            const savedSnap = await getDoc(userDocRef);
+            if (savedSnap.exists()) {
+              verifiedProfile = savedSnap.data()?.profile || mergedProfile;
+              verifiedInFirestore = true;
+            }
+          } catch (dbErr) {
+            console.warn("[RESUME_UPLOAD] Falha na persist\xEAncia Firestore:", dbErr);
           }
-        } catch (readErr) {
-          console.warn("[RESUME_UPLOAD] Erro ao ler documento pr\xE9vio do usu\xE1rio:", readErr);
         }
-        const mergedProfile = {
-          ...existingProfile,
-          ...extraction.extracted,
-          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-        };
-        await setDoc4(userDocRef, { profile: mergedProfile }, { merge: true });
-        const savedSnap = await getDoc(userDocRef);
-        const savedData = savedSnap.exists() ? savedSnap.data() : null;
-        const verifiedProfile = savedData?.profile || mergedProfile;
-        const maskedUid = uid.length > 8 ? `${uid.substring(0, 4)}...${uid.substring(uid.length - 4)}` : uid;
         console.log("==========================================");
         console.log("\u{1F4CA} DIAGN\xD3STICO DE PROCESSAMENTO DE CURR\xCDCULO");
         console.log("==========================================");
@@ -1149,18 +1162,13 @@ async function startServer() {
         console.log(`Tamanho: ${(file.size / 1024).toFixed(1)} KB`);
         console.log(`MIME type: ${file.mimetype}`);
         console.log(`Texto extra\xEDdo: ${extraction.rawTextLength} caracteres`);
-        console.log(`Primeiros 300 caracteres: "${extraction.sampleText.substring(0, 150)}..."`);
         console.log(`Quantidade de campos preenchidos: ${extraction.filledFieldsCount}`);
         console.log(`Campos preenchidos: ${extraction.filledFieldsList.join(", ")}`);
         console.log(`UID: ${maskedUid}`);
-        console.log(`Firestore Project: ${REAL_FIREBASE_CONFIG.projectId}`);
-        console.log(`Firestore Database: ${REAL_FIREBASE_CONFIG.firestoreDatabaseId}`);
-        console.log(`Documento Firestore: users/${maskedUid}`);
-        console.log(`Verifica\xE7\xE3o de Leitura Firestore: ${savedSnap.exists() ? "SUCESSO" : "FALHA"}`);
         console.log("==========================================");
         return res.json({
           success: true,
-          message: "Dados extra\xEDdos com sucesso \u2022 PDF exclu\xEDdo ap\xF3s o processamento",
+          message: "Dados extra\xEDdos com sucesso \u2022 PDF processado com IA",
           extracted: verifiedProfile,
           warning: extraction.warning,
           diagnostics: {
@@ -1171,8 +1179,8 @@ async function startServer() {
             filledFieldsList: extraction.filledFieldsList,
             maskedUid,
             projectId: REAL_FIREBASE_CONFIG.projectId,
-            firestorePath: `users/${maskedUid}`,
-            verifiedInFirestore: savedSnap.exists()
+            firestorePath: uid ? `users/${maskedUid}` : "guest_memory",
+            verifiedInFirestore
           }
         });
       } catch (err) {

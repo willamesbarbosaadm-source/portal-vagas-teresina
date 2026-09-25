@@ -168,21 +168,19 @@ export function CandidateDashboardModal({
     setWarningMsg('');
 
     try {
-      const token = await currentUser.getIdToken?.();
-      if (!token) {
-        setUploadErrorMsg('Usuário não autenticado. Faça login novamente.');
-        setUploading(false);
-        return;
-      }
+      const token = await currentUser?.getIdToken?.().catch(() => null);
 
       const formData = new FormData();
       formData.append('resume', file);
 
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('/api/candidate/resume', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
+        headers,
         body: formData
       });
 
@@ -197,12 +195,14 @@ export function CandidateDashboardModal({
         const newProfile = { ...emptyProfile, ...data.extracted };
         setProfile(newProfile);
 
-        // Salva cliente-side Firestore por garantia
-        try {
-          const userDocRef = doc(db, 'users', currentUser.uid);
-          await setDoc(userDocRef, { profile: newProfile }, { merge: true });
-        } catch (fErr) {
-          console.warn('Atualização local de apoio no Firestore:', fErr);
+        // Salva cliente-side Firestore por garantia se estiver autenticado
+        if (currentUser?.uid) {
+          try {
+            const userDocRef = doc(db, 'users', currentUser.uid);
+            await setDoc(userDocRef, { profile: newProfile }, { merge: true });
+          } catch (fErr) {
+            console.warn('Atualização local de apoio no Firestore:', fErr);
+          }
         }
       }
 

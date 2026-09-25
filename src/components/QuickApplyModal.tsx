@@ -24,19 +24,54 @@ export const QuickApplyModal: React.FC<QuickApplyModalProps> = ({
 
   if (!isOpen || !job) return null;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFileName(e.target.files[0].name);
+      const file = e.target.files[0];
+      setFileName(file.name);
+
+      if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+        try {
+          const formData = new FormData();
+          formData.append('resume', file);
+          const res = await fetch('/api/candidate/resume', {
+            method: 'POST',
+            body: formData
+          });
+          const data = await res.json();
+          if (data.success && data.extracted) {
+            if (data.extracted.name && !candidateName) setCandidateName(data.extracted.name);
+            if (data.extracted.phone && !candidatePhone) setCandidatePhone(data.extracted.phone);
+            if (data.extracted.linkedin && !candidatePortfolio) setCandidatePortfolio(data.extracted.linkedin);
+          }
+        } catch (err) {
+          console.warn('Erro na extração rápida do currículo:', err);
+        }
+      }
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
     setTimeout(() => {
       setIsSubmitting(false);
+
+      // Despacha a candidatura pelo canal oficial da vaga
+      if (job.applicationUrl && job.applicationUrl.startsWith('http')) {
+        window.open(job.applicationUrl, '_blank', 'noopener,noreferrer');
+      } else if (job.contactEmail) {
+        const mailBody = `Olá equipe de RH da ${job.company},\n\nGostaria de me candidatar à vaga de ${job.title} divulgada no Portal VAI DÁ CERTO.\n\nMeus dados de contato:\nNome: ${candidateName}\nE-mail: ${candidateEmail}\nWhatsApp: ${candidatePhone}\n${candidatePortfolio ? `Portfólio / LinkedIn: ${candidatePortfolio}\n` : ''}\nEm anexo encaminho meu currículo.\n\nAtenciosamente,\n${candidateName}`;
+        window.location.href = `mailto:${job.contactEmail}?subject=${encodeURIComponent(`Candidatura: ${job.title} - ${candidateName}`)}&body=${encodeURIComponent(mailBody)}`;
+      } else if (job.whatsapp) {
+        const cleanWa = job.whatsapp.replace(/\D/g, '');
+        const waMsg = `Olá! Meu nome é ${candidateName}. Vi a vaga de ${job.title} na ${job.company} pelo Portal VAI DÁ CERTO e gostaria de enviar meu currículo.\nContato: ${candidatePhone} | ${candidateEmail}`;
+        window.open(`https://wa.me/${cleanWa}?text=${encodeURIComponent(waMsg)}`, '_blank', 'noopener,noreferrer');
+      }
+
       onClose();
-      onShowToast(`🚀 Vai Que Dá Certo! Sua candidatura para "${job.title}" na ${job.company} foi enviada direto para o RH!`);
+      onShowToast(`🚀 Vai Que Dá Certo! Sua candidatura para "${job.title}" na ${job.company} foi enviada!`);
+
       // Reset
       setCandidateName('');
       setCandidateEmail('');
