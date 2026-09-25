@@ -24,7 +24,7 @@ import {
   Settings
 } from 'lucide-react';
 import { Job, GratitudeComment, FilterState, WorkMode, JobSource } from './types';
-import { INITIAL_JOBS, INCOMING_JOBS_POOL, INITIAL_GRATITUDE } from './data/initialData';
+import { INITIAL_JOBS, INITIAL_GRATITUDE } from './data/initialData';
 import { db } from './lib/firebase';
 import { firebaseAuth } from './services/auth';
 import { collection, getDocs, addDoc, onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
