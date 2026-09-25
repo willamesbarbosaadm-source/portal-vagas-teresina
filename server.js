@@ -728,105 +728,90 @@ async function syncGupyJobs() {
 }
 
 // server/firebaseAuthHelper.ts
+import { initializeApp as initializeApp2, getApps as getApps2 } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 var ADMIN_EMAIL = "willamesbarbosaadm@gmail.com";
 var AUTH_PROJECT_ID = "equipamento-estudantis-bxhgq";
-var AUTH_API_KEY = "AIzaSyAE9SFXO0CK3Rso-BsLpEld8xqMYayUoj0";
+var AUTH_ADMIN_APP_NAME = "auth-admin-app";
+function getAuthAdmin() {
+  const existingApp = getApps2().find((a) => a.name === AUTH_ADMIN_APP_NAME);
+  const app = existingApp || initializeApp2({
+    projectId: process.env.VITE_FIREBASE_AUTH_PROJECT_ID || AUTH_PROJECT_ID
+  }, AUTH_ADMIN_APP_NAME);
+  return getAuth(app);
+}
 function isAuthorizedAdmin(email) {
   if (!email) return false;
   return email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim();
 }
-async function validateFirebaseToken(token) {
+async function validateFirebaseToken(token, options) {
   if (!token || typeof token !== "string" || token.trim().length === 0) {
     return { ok: false, status: 401, error: "Token ausente ou inv\xE1lido." };
   }
-  const parts = token.trim().split(".");
-  if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) {
+  const cleanToken = token.trim();
+  const parts = cleanToken.split(".");
+  if (parts.length !== 3) {
     return { ok: false, status: 401, error: "Formato de token JWT inv\xE1lido." };
   }
   try {
-    const headerStr = Buffer.from(parts[0], "base64url").toString("utf8");
-    const header = JSON.parse(headerStr);
-    if (!header || typeof header !== "object") {
-      return { ok: false, status: 401, error: "Cabe\xE7alho JWT inv\xE1lido." };
-    }
-    const alg = String(header.alg || "").toLowerCase().trim();
-    if (!alg || alg === "none" || alg === "null") {
-      return { ok: false, status: 401, error: "Algoritmo de assinatura n\xE3o permitido (alg: none)." };
-    }
-  } catch {
-    return { ok: false, status: 401, error: "Falha ao decodificar cabe\xE7alho do token." };
-  }
-  if (parts[2] === "fake_signature" || parts[2].trim().length < 10) {
-    return { ok: false, status: 401, error: "Assinatura criptogr\xE1fica do token forjada ou ausente." };
-  }
-  try {
-    const payloadStr = Buffer.from(parts[1], "base64url").toString("utf8");
-    const payload = JSON.parse(payloadStr);
-    if (payload && payload.exp && typeof payload.exp === "number") {
-      if (payload.exp * 1e3 < Date.now()) {
-        return { ok: false, status: 401, error: "Token de autentica\xE7\xE3o expirado." };
-      }
-    }
-    if (payload && payload.aud && typeof payload.aud === "string") {
-      if (payload.aud !== AUTH_PROJECT_ID && !payload.aud.includes(AUTH_PROJECT_ID)) {
-        return { ok: false, status: 401, error: "Token emitido para projeto de autentica\xE7\xE3o n\xE3o autorizado." };
-      }
-    }
-  } catch {
-    return { ok: false, status: 401, error: "Payload do token corrompido." };
-  }
-  const apiKey = process.env.VITE_FIREBASE_AUTH_API_KEY || AUTH_API_KEY;
-  if (!apiKey) {
-    return {
-      ok: false,
-      status: 503,
-      error: "Chave de API do Firebase Authentication n\xE3o configurada no servidor."
-    };
-  }
-  try {
-    const response = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken: token.trim() })
-      }
-    );
-    if (!response.ok) {
+    const authAdmin = getAuthAdmin();
+    const decodedToken = await authAdmin.verifyIdToken(cleanToken);
+    const expectedProjectId = process.env.VITE_FIREBASE_AUTH_PROJECT_ID || AUTH_PROJECT_ID;
+    if (decodedToken.aud !== expectedProjectId) {
       return {
         ok: false,
         status: 401,
-        error: "Token rejeitado pelo provedor Firebase Authentication (equipamento-estudantis-bxhgq)."
+        error: `Token emitido para projeto n\xE3o autorizado (${decodedToken.aud}). Esperado: ${expectedProjectId}.`
       };
     }
-    const data = await response.json();
-    const userRecord = data?.users?.[0];
-    if (!userRecord || !userRecord.email) {
+    const email = (decodedToken.email || "").toLowerCase().trim();
+    if (!email) {
       return {
         ok: false,
         status: 401,
-        error: "Usu\xE1rio n\xE3o localizado no Firebase Authentication."
+        error: "Token n\xE3o cont\xE9m endere\xE7o de e-mail associado."
       };
     }
-    const email = String(userRecord.email).toLowerCase().trim();
+    const emailVerified = Boolean(decodedToken.email_verified);
+    if (options?.requireEmailVerified && !emailVerified) {
+      return {
+        ok: false,
+        status: 403,
+        error: "E-mail n\xE3o verificado. Confirme seu e-mail antes de prosseguir."
+      };
+    }
     const isAdmin = isAuthorizedAdmin(email);
     return {
       ok: true,
       status: 200,
       user: {
-        id: userRecord.localId,
+        id: decodedToken.uid,
         email,
         isAdmin,
-        emailVerified: Boolean(userRecord.emailVerified),
-        displayName: userRecord.displayName
+        emailVerified,
+        displayName: decodedToken.name,
+        decodedToken
       }
     };
-  } catch (netErr) {
-    console.error("Erro de conex\xE3o ao validar token Firebase Auth:", netErr);
+  } catch (err) {
+    const code = err?.code || "";
+    const message = err?.message || "";
+    if (code === "auth/id-token-expired") {
+      return { ok: false, status: 401, error: "Token de autentica\xE7\xE3o expirado." };
+    }
+    if (code === "auth/id-token-revoked") {
+      return { ok: false, status: 401, error: "Token de autentica\xE7\xE3o foi revogado." };
+    }
+    if (code === "auth/invalid-id-token" || code === "auth/argument-error") {
+      return { ok: false, status: 401, error: "Assinatura ou formato do token Firebase inv\xE1lido." };
+    }
+    if (code === "auth/project-not-found") {
+      return { ok: false, status: 503, error: "Projeto Firebase de autentica\xE7\xE3o n\xE3o encontrado." };
+    }
     return {
       ok: false,
-      status: 503,
-      error: "Falha tempor\xE1ria de comunica\xE7\xE3o com o servi\xE7o de autentica\xE7\xE3o do Firebase."
+      status: 401,
+      error: `Falha na verifica\xE7\xE3o criptogr\xE1fica do token: ${message || "Token rejeitado."}`
     };
   }
 }

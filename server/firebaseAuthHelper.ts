@@ -1,8 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import type { App } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import type { Auth, DecodedIdToken } from 'firebase-admin/auth';
 
 export const ADMIN_EMAIL = 'willamesbarbosaadm@gmail.com';
 export const AUTH_PROJECT_ID = 'equipamento-estudantis-bxhgq';
-export const AUTH_API_KEY = 'AIzaSyAE9SFXO0CK3Rso-BsLpEld8xqMYayUoj0';
 
 export interface AuthenticatedUser {
   id: string;
@@ -10,6 +13,7 @@ export interface AuthenticatedUser {
   isAdmin: boolean;
   emailVerified: boolean;
   displayName?: string;
+  decodedToken: DecodedIdToken;
 }
 
 export interface TokenValidationSuccess {
@@ -35,124 +39,124 @@ declare global {
   }
 }
 
+/**
+ * Inicializa a instância oficial do Firebase Admin SDK exclusivamente
+ * para o projeto de Authentication: equipamento-estudantis-bxhgq
+ */
+const AUTH_ADMIN_APP_NAME = 'auth-admin-app';
+
+export function getAuthAdmin(): Auth {
+  const existingApp = getApps().find(a => a.name === AUTH_ADMIN_APP_NAME);
+  const app: App = existingApp || initializeApp({
+    projectId: process.env.VITE_FIREBASE_AUTH_PROJECT_ID || AUTH_PROJECT_ID,
+  }, AUTH_ADMIN_APP_NAME);
+
+  return getAuth(app);
+}
+
 export function isAuthorizedAdmin(email?: string | null): boolean {
   if (!email) return false;
   return email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim();
 }
 
 /**
- * Valida o Firebase ID Token emitido exclusivamente pelo projeto de Authentication:
- * Projeto: equipamento-estudantis-bxhgq
- * Realiza verificação criptográfica autoritativa junto à API oficial do Google Identity Toolkit.
+ * Validação oficial do Firebase ID Token usando verifyIdToken() do Firebase Admin SDK.
+ * 
+ * O verifyIdToken() oficial valida criptograficamente:
+ * 1. Assinatura criptográfica (RS256 com certificados públicos oficiais do Google)
+ * 2. Expiração do token (exp)
+ * 3. Emissor (iss == https://securetoken.google.com/equipamento-estudantis-bxhgq)
+ * 4. Audiência (aud == equipamento-estudantis-bxhgq)
+ * 5. Subject / UID (sub)
+ * 6. Integridade do token
  */
-export async function validateFirebaseToken(token: string): Promise<TokenValidationResult> {
+export async function validateFirebaseToken(
+  token: string,
+  options?: { requireEmailVerified?: boolean }
+): Promise<TokenValidationResult> {
   if (!token || typeof token !== 'string' || token.trim().length === 0) {
     return { ok: false, status: 401, error: 'Token ausente ou inválido.' };
   }
 
-  const parts = token.trim().split('.');
-  if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) {
+  const cleanToken = token.trim();
+
+  // Rejeição imediata de tokens com formato não JWT (3 partes separadas por ponto)
+  const parts = cleanToken.split('.');
+  if (parts.length !== 3) {
     return { ok: false, status: 401, error: 'Formato de token JWT inválido.' };
   }
 
-  // 1. Verificação do cabeçalho JWT (rejeita alg: none e algoritmos ausentes)
   try {
-    const headerStr = Buffer.from(parts[0], 'base64url').toString('utf8');
-    const header = JSON.parse(headerStr);
-    if (!header || typeof header !== 'object') {
-      return { ok: false, status: 401, error: 'Cabeçalho JWT inválido.' };
-    }
-    const alg = String(header.alg || '').toLowerCase().trim();
-    if (!alg || alg === 'none' || alg === 'null') {
-      return { ok: false, status: 401, error: 'Algoritmo de assinatura não permitido (alg: none).' };
-    }
-  } catch {
-    return { ok: false, status: 401, error: 'Falha ao decodificar cabeçalho do token.' };
-  }
+    const authAdmin = getAuthAdmin();
+    // Validação oficial criptográfica do Firebase Admin SDK
+    const decodedToken: DecodedIdToken = await authAdmin.verifyIdToken(cleanToken);
 
-  // 2. Rejeição explícita de tokens forjados conhecidos ou sem assinatura real
-  if (parts[2] === 'fake_signature' || parts[2].trim().length < 10) {
-    return { ok: false, status: 401, error: 'Assinatura criptográfica do token forjada ou ausente.' };
-  }
-
-  // 3. Verificação de expiração e emissor prévia se contida no payload
-  try {
-    const payloadStr = Buffer.from(parts[1], 'base64url').toString('utf8');
-    const payload = JSON.parse(payloadStr);
-    if (payload && payload.exp && typeof payload.exp === 'number') {
-      if (payload.exp * 1000 < Date.now()) {
-        return { ok: false, status: 401, error: 'Token de autenticação expirado.' };
-      }
-    }
-    // Confirma que o token foi emitido para o projeto de Auth equipamento-estudantis-bxhgq
-    if (payload && payload.aud && typeof payload.aud === 'string') {
-      if (payload.aud !== AUTH_PROJECT_ID && !payload.aud.includes(AUTH_PROJECT_ID)) {
-        return { ok: false, status: 401, error: 'Token emitido para projeto de autenticação não autorizado.' };
-      }
-    }
-  } catch {
-    return { ok: false, status: 401, error: 'Payload do token corrompido.' };
-  }
-
-  const apiKey = process.env.VITE_FIREBASE_AUTH_API_KEY || AUTH_API_KEY;
-  if (!apiKey) {
-    return {
-      ok: false,
-      status: 503,
-      error: 'Chave de API do Firebase Authentication não configurada no servidor.'
-    };
-  }
-
-  // 4. Validação autoritativa na API oficial do Google Identity Toolkit para equipamento-estudantis-bxhgq
-  try {
-    const response = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken: token.trim() })
-      }
-    );
-
-    if (!response.ok) {
+    // Validação de correspondência explícita do Project ID (segurança adicional)
+    const expectedProjectId = process.env.VITE_FIREBASE_AUTH_PROJECT_ID || AUTH_PROJECT_ID;
+    if (decodedToken.aud !== expectedProjectId) {
       return {
         ok: false,
         status: 401,
-        error: 'Token rejeitado pelo provedor Firebase Authentication (equipamento-estudantis-bxhgq).'
+        error: `Token emitido para projeto não autorizado (${decodedToken.aud}). Esperado: ${expectedProjectId}.`
       };
     }
 
-    const data: any = await response.json();
-    const userRecord = data?.users?.[0];
-
-    if (!userRecord || !userRecord.email) {
+    const email = (decodedToken.email || '').toLowerCase().trim();
+    if (!email) {
       return {
         ok: false,
         status: 401,
-        error: 'Usuário não localizado no Firebase Authentication.'
+        error: 'Token não contém endereço de e-mail associado.'
       };
     }
 
-    const email = String(userRecord.email).toLowerCase().trim();
+    const emailVerified = Boolean(decodedToken.email_verified);
+
+    // Validação opcional de email_verified quando exigido pela rota
+    if (options?.requireEmailVerified && !emailVerified) {
+      return {
+        ok: false,
+        status: 403,
+        error: 'E-mail não verificado. Confirme seu e-mail antes de prosseguir.'
+      };
+    }
+
     const isAdmin = isAuthorizedAdmin(email);
 
     return {
       ok: true,
       status: 200,
       user: {
-        id: userRecord.localId,
+        id: decodedToken.uid,
         email,
         isAdmin,
-        emailVerified: Boolean(userRecord.emailVerified),
-        displayName: userRecord.displayName
+        emailVerified,
+        displayName: decodedToken.name,
+        decodedToken
       }
     };
-  } catch (netErr: any) {
-    console.error('Erro de conexão ao validar token Firebase Auth:', netErr);
+  } catch (err: any) {
+    const code = err?.code || '';
+    const message = err?.message || '';
+
+    if (code === 'auth/id-token-expired') {
+      return { ok: false, status: 401, error: 'Token de autenticação expirado.' };
+    }
+    if (code === 'auth/id-token-revoked') {
+      return { ok: false, status: 401, error: 'Token de autenticação foi revogado.' };
+    }
+    if (code === 'auth/invalid-id-token' || code === 'auth/argument-error') {
+      return { ok: false, status: 401, error: 'Assinatura ou formato do token Firebase inválido.' };
+    }
+    if (code === 'auth/project-not-found') {
+      return { ok: false, status: 503, error: 'Projeto Firebase de autenticação não encontrado.' };
+    }
+
+    // Rejeição para tokens forjados, assinaturas corrompidas ou erros de rede
     return {
       ok: false,
-      status: 503,
-      error: 'Falha temporária de comunicação com o serviço de autenticação do Firebase.'
+      status: 401,
+      error: `Falha na verificação criptográfica do token: ${message || 'Token rejeitado.'}`
     };
   }
 }
@@ -212,4 +216,36 @@ export async function requireFirebaseAdmin(
 
   req.firebaseUser = validation.user;
   next();
+}
+
+/**
+ * Middleware para rotas que exigem usuário autenticado com verificação de e-mail opcional/obrigatória
+ */
+export function requireAuthenticatedUser(options?: { requireEmailVerified?: boolean }) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({
+        success: false,
+        error: 'Autenticação necessária. Cabeçalho Authorization ausente ou inválido.'
+      });
+      return;
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/, '').trim();
+    const validation = await validateFirebaseToken(token, {
+      requireEmailVerified: options?.requireEmailVerified ?? false
+    });
+
+    if (!validation.ok) {
+      res.status(validation.status).json({
+        success: false,
+        error: validation.error
+      });
+      return;
+    }
+
+    req.firebaseUser = validation.user;
+    next();
+  };
 }
