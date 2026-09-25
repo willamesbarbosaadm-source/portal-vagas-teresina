@@ -224,8 +224,7 @@ export default function App() {
     return [];
   });
 
-  // Incoming pool of jobs for auto updates
-  const [incomingPool, setIncomingPool] = useState<Job[]>(INCOMING_JOBS_POOL);
+  // Contador de novidades detectadas pelo radar a partir de fontes reais.
   const [newJobsCount, setNewJobsCount] = useState(0);
 
   // SINE-PI Integration State (Conectado em tempo real ao Firestore sine_vagas e API /api/sine/jobs)
@@ -519,57 +518,64 @@ export default function App() {
     }
   }, []);
 
-  // Puxa automaticamente a próxima vaga real do LinkedIn e Gupy de Teresina
-  const pullNextLinkedInJob = useCallback(() => {
-    fetch('/api/gupy/jobs')
-      .then(res => res.ok ? res.text().then(t => t ? JSON.parse(t) : null).catch(() => null) : null)
-      .then(data => {
-        if (data && data.success && Array.isArray(data.jobs) && data.jobs.length > 0) {
-          setJobs(prevJobs => {
-            const existingIds = new Set(prevJobs.map(j => j.id));
-            const newGupyJobs = data.jobs.filter((j: Job) => !existingIds.has(j.id));
-            if (newGupyJobs.length > 0) {
-              const updated = [...newGupyJobs, ...prevJobs];
-              try {
-                localStorage.setItem(STORAGE_KEYS.JOBS, JSON.stringify(updated));
-              } catch (e) {
-                console.error(e);
-              }
-              setNewJobsCount(c => c + newGupyJobs.length);
-              setToastMessage(`⚡ Radar Ativo: +${newGupyJobs.length} nova(s) vaga(s) recebida(s) do Portal Gupy!`);
-              return updated;
-            }
-            return prevJobs;
-          });
-        }
-      })
-      .catch(err => console.log('Radar auto-sync:', err));
+  // Radar de vagas: consulta somente fontes reais e nunca injeta vagas de demonstração.
+  const pullNextLinkedInJob = useCallback(async () => {
+    try {
+      const [gupyResponse, sineResponse] = await Promise.all([
+        fetch('/api/gupy/jobs'),
+        fetch('/api/sine/jobs')
+      ]);
 
-    if (incomingPool.length > 0) {
-      const nextJob: Job = {
-        ...incomingPool[0],
-        postedAt: 'Agora mesmo',
-        timestamp: Date.now(),
-        isNew: true
-      };
-      setIncomingPool((prev) => prev.slice(1));
-      setJobs((prevJobs) => {
-        const exists = prevJobs.some((j) => j.id === nextJob.id);
-        if (exists) {
-          return prevJobs;
+      const gupyData = gupyResponse.ok
+        ? await gupyResponse.json().catch(() => null)
+        : null;
+      const sineData = sineResponse.ok
+        ? await sineResponse.json().catch(() => null)
+        : null;
+
+      const realGupyJobs: Job[] =
+        gupyData?.success && Array.isArray(gupyData.jobs)
+          ? gupyData.jobs.filter((j: any) => j?.id && j?.source === 'Gupy' && j?.applicationUrl)
+          : [];
+
+      const realSineJobs: Job[] =
+        sineData?.success && Array.isArray(sineData.jobs)
+          ? sineData.jobs.filter((j: any) => j?.id && (isSineJobRecord(j) || j?.source === 'SINE-PI'))
+          : [];
+
+      if (realGupyJobs.length === 0 && realSineJobs.length === 0) {
+        setLastUpdatedTime(new Date().toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit'
+        }));
+        return;
+      }
+
+      setJobs(prevJobs => {
+        const existingIds = new Set(prevJobs.map(j => j.id));
+        const incomingRealJobs = [...realGupyJobs, ...realSineJobs]
+          .filter(j => !existingIds.has(j.id))
+          .map(j => ({ ...j, isNew: Boolean(j.isNew) }));
+
+        if (incomingRealJobs.length > 0) {
+          setNewJobsCount(count => count + incomingRealJobs.length);
+          setToastMessage(
+            `⚡ Radar Ativo: +${incomingRealJobs.length} nova(s) vaga(s) detectada(s) em fontes oficiais.`
+          );
         }
-        return [nextJob, ...prevJobs];
+
+        const merged = [...incomingRealJobs, ...prevJobs];
+        return merged.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
       });
-      setNewJobsCount((c) => c + 1);
-      const now = new Date();
-      setLastUpdatedTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
-      const sourceLabel = nextJob.source === 'LinkedIn' ? 'LinkedIn (RH Teresina)' : 'Direto da Empresa';
-      setToastMessage(`🔥 Nova vaga real puxada (${sourceLabel}): ${nextJob.title} na ${nextJob.company}!`);
-    } else {
-      const now = new Date();
-      setLastUpdatedTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
+
+      setLastUpdatedTime(new Date().toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      }));
+    } catch (err) {
+      console.warn('Radar de vagas: erro na consulta das fontes reais:', err);
     }
-  }, [incomingPool]);
+  }, []);
 
   // Automatic update ticker countdown
   useEffect(() => {
@@ -578,7 +584,7 @@ export default function App() {
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          pullNextLinkedInJob();
+          void pullNextLinkedInJob();
           return MAX_COUNTDOWN;
         }
         return prev - 1;
@@ -597,8 +603,8 @@ export default function App() {
       const result = await triggerSineSync();
       const sineData = result.data || {};
 
-      // 2. Busca novidades do Gupy
-      pullNextLinkedInJob();
+      // 2. Atualiza o Radar consultando as fontes reais
+      void pullNextLinkedInJob();
 
       setCountdown(MAX_COUNTDOWN);
       setIsRefreshing(false);
