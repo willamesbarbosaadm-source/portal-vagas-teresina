@@ -286,6 +286,26 @@ async function startServer() {
     }
   });
 
+  // Themos Vagas - somente catálogo recente dos últimos 5 dias
+  app.get("/api/themos/jobs", async (req, res) => {
+    try {
+      const db = getServerFirestore();
+      const snap = await getDocs(collection(db, "themos_vagas"));
+      const cutoff = Date.now() - 5 * 24 * 60 * 60 * 1000;
+      const jobs: any[] = [];
+      snap.forEach((docSnap) => {
+        const data = docSnap.data();
+        const publicationDateTime = Number(data.publicationDateTime) || 0;
+        if (publicationDateTime >= cutoff) jobs.push({ id: docSnap.id, ...data });
+      });
+      jobs.sort((a, b) => (Number(b.publicationDateTime) || 0) - (Number(a.publicationDateTime) || 0));
+      return res.json({ success: true, count: jobs.length, jobs, windowDays: 5, source: "Themos Vagas" });
+    } catch (error: any) {
+      console.error("Themos jobs read error:", error);
+      return res.status(503).json({ success: false, count: 0, jobs: [], error: "Vagas Themos temporariamente indisponíveis." });
+    }
+  });
+
   // Protected Themos Vagas Cron Endpoint
   app.get("/api/cron/themos", async (req, res) => {
     const cronSecret = process.env.CRON_SECRET;
