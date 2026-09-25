@@ -107,7 +107,7 @@ export async function findLatestPdf(html: string): Promise<{ pdfUrl: string; pdf
   let latestPdf = {
     pdfUrl: '',
     pdfTitle: '',
-    publicationDate: new Date().toISOString().split('T')[0]
+    publicationDate: ''
   };
 
   const monthsMap: Record<string, string> = {
@@ -140,18 +140,8 @@ export async function findLatestPdf(html: string): Promise<{ pdfUrl: string; pdf
     }
   });
 
-  if (!latestPdf.pdfUrl) {
-    $('a').each((_, el) => {
-      const href = $(el).attr('href') || '';
-      if (href.toLowerCase().includes('.pdf')) {
-        latestPdf = {
-          pdfUrl: href.startsWith('http') ? href : `https://portal.pi.gov.br${href}`,
-          pdfTitle: $(el).text().trim() || 'Ofertas de vagas SINE-PI',
-          publicationDate: new Date().toISOString().split('T')[0]
-        };
-        return false;
-      }
-    });
+  if (!latestPdf.pdfUrl || !latestPdf.publicationDate) {
+    throw new Error('Não foi possível identificar uma publicação diária oficial do SINE-PI na página de vagas.');
   }
 
   return latestPdf;
@@ -247,7 +237,7 @@ export function parseTeresinaJobs(text: string, publicationDate: string, pdfUrl:
 }
 
 export function parsePcdJobs(text: string, publicationDate: string, pdfUrl: string): SineJobRecord[] {
-  return [];
+  return parseTeresinaJobs(text, publicationDate, pdfUrl).filter(job => job.pcd);
 }
 
 export function normalizeJob(partial: Partial<any>, publicationDate: string, pdfUrl: string, pcd: boolean): SineJobRecord {
@@ -303,10 +293,10 @@ export function normalizeJob(partial: Partial<any>, publicationDate: string, pdf
     sourceUrl: 'https://portal.pi.gov.br/sine/vagas-de-emprego/',
     contentHash,
     updatedAt: now,
-    salario: 'Piso Salarial / A Combinar',
-    tipo_contrato: 'CLT',
-    modalidade: 'Presencial',
-    beneficios: ['Vale Transporte', 'Benefícios Legais'],
+    salario: partial.salario?.trim() || 'Não informado na publicação oficial',
+    tipo_contrato: partial.tipo_contrato?.trim() || 'Não informado na publicação oficial',
+    modalidade: partial.modalidade?.trim() || 'Não informado na publicação oficial',
+    beneficios: Array.isArray(partial.beneficios) ? partial.beneficios : [],
     observacoes: details,
     requisitos: [education, `Experiência: ${experience}`],
     cnh: 'Não informado',
@@ -324,9 +314,9 @@ export async function syncSineJobs(): Promise<SyncResult> {
   let duplicatesCount = 0;
 
   const startedAt = Date.now();
-  let pdfUrl = 'https://portal.pi.gov.br/sine/vagas-de-emprego/';
-  let pdfTitle = 'Ofertas de vagas em 23 de Setembro de 2026';
-  let publicationDate = '2026-09-23';
+  let pdfUrl = '';
+  let pdfTitle = '';
+  let publicationDate = '';
 
   try {
     const html = await fetchSineJobsPage();
