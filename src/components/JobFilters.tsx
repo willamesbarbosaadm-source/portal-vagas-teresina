@@ -22,7 +22,7 @@ const CATEGORY_MAP = [
 const WORK_MODES: WorkMode[] = ['Todos', 'Remoto', 'Híbrido', 'Presencial'];
 const CONTRACT_TYPES: ContractType[] = ['Todos', 'CLT', 'PJ', 'Estágio', 'Freelance'];
 const LEVELS: ExperienceLevel[] = ['Todos', 'Júnior', 'Pleno', 'Sênior', 'Especialista', 'Sem Experiência'];
-const SOURCES: JobSource[] = ['Todos', 'SINE-PI', 'Gupy', 'Talentbrand', 'Direto', 'Themos Vagas'];
+const SOURCES: JobSource[] = ['Todos', 'Gupy', 'Talentbrand', 'Direto', 'Themos Vagas'];
 
 export const JobFilters: React.FC<JobFiltersProps> = ({
   filters,

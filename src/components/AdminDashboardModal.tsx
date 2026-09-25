@@ -131,9 +131,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           </div>
 
           <div className="max-h-64 overflow-y-auto space-y-2 pr-2 border-2 border-slate-900 rounded-2xl p-3 bg-slate-50">
-            {jobs.map((job) => (
+            {jobs.map((job, idx) => (
               <div 
-                key={job.id}
+                key={`${job.id}-${idx}`}
                 className="flex items-center justify-between p-3 bg-white rounded-xl border-2 border-slate-200 hover:border-slate-900 transition-all"
               >
                 <div>

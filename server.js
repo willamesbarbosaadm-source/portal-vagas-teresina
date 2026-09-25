@@ -1,7 +1,8 @@
 // server.ts
 import express from "express";
 import path2 from "path";
-import { collection as collection4, getDocs as getDocs4 } from "firebase/firestore";
+import multer from "multer";
+import { collection as collection4, getDocs as getDocs4, doc as doc4, getDoc, setDoc as setDoc4 } from "firebase/firestore";
 import { createServer as createViteServer } from "vite";
 
 // server/sineProvider.ts
@@ -870,14 +871,358 @@ async function requireFirebaseAdmin(req, res, next) {
   req.firebaseUser = validation.user;
   next();
 }
+function requireAuthenticatedUser(options) {
+  return async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      res.status(401).json({
+        success: false,
+        error: "Autentica\xE7\xE3o necess\xE1ria. Cabe\xE7alho Authorization ausente ou inv\xE1lido."
+      });
+      return;
+    }
+    const token = authHeader.replace(/^Bearer\s+/, "").trim();
+    const validation = await validateFirebaseToken(token, {
+      requireEmailVerified: options?.requireEmailVerified ?? false
+    });
+    if (!validation.ok) {
+      res.status(validation.status).json({
+        success: false,
+        error: validation.error
+      });
+      return;
+    }
+    req.firebaseUser = validation.user;
+    next();
+  };
+}
+
+// server/resumeExtractor.ts
+import { PDFParse } from "pdf-parse";
+import { GoogleGenAI } from "@google/genai";
+var emptyProfile = {
+  name: "",
+  phone: "",
+  city: "",
+  address: "",
+  desiredRole: "",
+  education: "",
+  experience: "",
+  salaryExpectation: "",
+  linkedin: "",
+  modality: "",
+  contractType: "",
+  skills: "",
+  summary: ""
+};
+function cleanPdfText(text) {
+  if (!text) return "";
+  return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+}
+function heuristicExtract(text) {
+  const profile = { ...emptyProfile };
+  if (!text) return profile;
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  for (const line of lines.slice(0, 5)) {
+    if (line.length > 3 && line.length < 50 && !/curr[ií]culo|resumo|email|telefone|contato/i.test(line)) {
+      profile.name = line;
+      break;
+    }
+  }
+  const phoneMatch = text.match(/(?:\+?55\s*)?(?:\(?\d{2}\)?\s*)?(?:9\s*)?\d{4,5}[-\s]?\d{4}/);
+  if (phoneMatch) {
+    profile.phone = phoneMatch[0].trim();
+  }
+  const cityMatch = text.match(/(Teresina|Timon|Parnaíba|Picos|Floriano|Campo Maior|Piripiri)[^,\n]*/i);
+  if (cityMatch) {
+    profile.city = cityMatch[0].trim();
+  } else {
+    const genCityMatch = text.match(/(?:cidade|localidade|endereço):\s*([^\n]+)/i);
+    if (genCityMatch) profile.city = genCityMatch[1].trim();
+  }
+  const linkedinMatch = text.match(/https?:\/\/(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+/i);
+  if (linkedinMatch) {
+    profile.linkedin = linkedinMatch[0].trim();
+  }
+  const eduMatch = text.match(/(?:formação|escolaridade|graduação|ensino|curso)[^\n]*\n([\s\S]{1,250}?)(?=\n\n|\n[A-Z\s]{4,}:|$)/i);
+  if (eduMatch) {
+    profile.education = eduMatch[1].trim();
+  }
+  const expMatch = text.match(/(?:experiência|histórico profissional|atuacao)[^\n]*\n([\s\S]{1,400}?)(?=\n\n|\n[A-Z\s]{4,}:|$)/i);
+  if (expMatch) {
+    profile.experience = expMatch[1].trim();
+  }
+  const skillsMatch = text.match(/(?:competências|habilidades|conhecimentos|skills)[^\n]*\n?([^\n]{1,200})/i);
+  if (skillsMatch) {
+    profile.skills = skillsMatch[1].trim();
+  }
+  const roleMatch = text.match(/(?:cargo|objetivo|função|vaga de interesse):\s*([^\n]+)/i);
+  if (roleMatch) {
+    profile.desiredRole = roleMatch[1].trim();
+  }
+  const summaryMatch = text.match(/(?:resumo|perfil profissional|sobre mim):\s*([^\n]+(?:\n[^\n]+){0,3})/i);
+  if (summaryMatch) {
+    profile.summary = summaryMatch[1].trim();
+  }
+  return profile;
+}
+async function extractTextFromPdfBuffer(pdfBuffer) {
+  try {
+    const parser = new PDFParse({ data: pdfBuffer });
+    const textResult = await parser.getText();
+    const rawText = textResult?.text || "";
+    return cleanPdfText(rawText);
+  } catch (err) {
+    console.warn("[PDF_PARSER] Erro ao extrair texto do PDF via PDFParse:", err?.message || err);
+    return "";
+  }
+}
+async function extractCandidateProfileFromPdf(pdfBuffer, filename) {
+  let rawText = "";
+  try {
+    rawText = await extractTextFromPdfBuffer(pdfBuffer);
+  } catch (e) {
+    console.warn("[PDF_PARSER] Leitura direta de texto falhou:", e);
+  }
+  const rawTextLength = rawText.length;
+  const sampleText = rawText.substring(0, 300);
+  const isScannedPdf = rawTextLength < 30;
+  let extracted = { ...emptyProfile };
+  let warning;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.VITE_FIREBASE_API_KEY;
+  if (apiKey) {
+    try {
+      const ai = new GoogleGenAI({ apiKey });
+      const pdfBase64 = pdfBuffer.toString("base64");
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                inlineData: {
+                  mimeType: "application/pdf",
+                  data: pdfBase64
+                }
+              },
+              {
+                text: `Analise com aten\xE7\xE3o o arquivo PDF de curr\xEDculo em anexo e extraia todas as informa\xE7\xF5es profissionais do candidato em formato JSON estrito.
+
+A resposta DEVE ser exclusivamente um JSON v\xE1lido com as seguintes chaves:
+{
+  "name": "Nome completo do candidato",
+  "phone": "Telefone ou WhatsApp de contato",
+  "city": "Cidade e estado (ex: Teresina - PI)",
+  "address": "Bairro ou endere\xE7o",
+  "desiredRole": "Cargo ou \xE1rea profissional pretendida",
+  "education": "Resumo da forma\xE7\xE3o acad\xEAmica e cursos",
+  "experience": "Principais experi\xEAncias de trabalho e fun\xE7\xF5es anteriores",
+  "salaryExpectation": "Pretens\xE3o salarial se informada ou 'A combinar'",
+  "linkedin": "Link do perfil do LinkedIn se houver",
+  "modality": "Presencial, Remoto ou H\xEDbrido",
+  "contractType": "CLT, PJ ou Est\xE1gio",
+  "skills": "Compet\xEAncias e habilidades principais separadas por v\xEDrgula",
+  "summary": "Resumo do perfil profissional do candidato"
+}
+
+Regras:
+1. Se algum campo n\xE3o estiver presente no documento, deixe como string vazia "".
+2. Se o PDF for uma imagem ou escaneado, leia todo o texto visual do curr\xEDculo.
+3. N\xE3o invente informa\xE7\xF5es fict\xEDcias, use apenas o conte\xFAdo do documento.`
+              }
+            ]
+          }
+        ],
+        config: {
+          responseMimeType: "application/json",
+          temperature: 0.1
+        }
+      });
+      const jsonText = response.text?.trim() || "";
+      if (jsonText) {
+        const parsed = JSON.parse(jsonText);
+        extracted = {
+          name: parsed.name || "",
+          phone: parsed.phone || "",
+          city: parsed.city || "",
+          address: parsed.address || "",
+          desiredRole: parsed.desiredRole || "",
+          education: parsed.education || "",
+          experience: parsed.experience || "",
+          salaryExpectation: parsed.salaryExpectation || "",
+          linkedin: parsed.linkedin || "",
+          modality: parsed.modality || "",
+          contractType: parsed.contractType || "",
+          skills: Array.isArray(parsed.skills) ? parsed.skills.join(", ") : parsed.skills || "",
+          summary: parsed.summary || ""
+        };
+      }
+    } catch (llmErr) {
+      console.warn("[GEMINI_EXTRACTOR] Erro na extra\xE7\xE3o multimodal do Gemini. Usando fallback regex:", llmErr?.message || llmErr);
+      extracted = heuristicExtract(rawText);
+    }
+  } else {
+    extracted = heuristicExtract(rawText);
+  }
+  if (!extracted.name && filename) {
+    const cleanFileName = filename.replace(/\.pdf$/i, "").replace(/curr[ií]culo|cv|resume| - /gi, " ").replace(/[_-]+/g, " ").trim();
+    if (cleanFileName.length >= 3 && cleanFileName.length < 40) {
+      extracted.name = cleanFileName;
+    }
+  }
+  const filledFieldsList = Object.entries(extracted).filter(([_, value]) => Boolean(value && typeof value === "string" && value.trim().length > 0)).map(([key]) => key);
+  const filledFieldsCount = filledFieldsList.length;
+  if (filledFieldsCount === 0) {
+    warning = "N\xE3o foi poss\xEDvel identificar dados no PDF. Voc\xEA pode preencher os campos manualmente.";
+  }
+  return {
+    extracted,
+    rawTextLength,
+    sampleText,
+    filledFieldsCount,
+    filledFieldsList,
+    isScannedPdf,
+    warning
+  };
+}
 
 // server.ts
+var upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }
+  // 10MB
+});
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3e3;
   app.use(express.json());
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  });
+  app.post(
+    "/api/candidate/resume",
+    requireAuthenticatedUser(),
+    upload.single("resume"),
+    async (req, res) => {
+      try {
+        const file = req.file || req.files?.[0];
+        if (!file || !file.buffer) {
+          return res.status(400).json({
+            success: false,
+            error: "Nenhum arquivo PDF enviado ou formato inv\xE1lido."
+          });
+        }
+        const uid = req.firebaseUser?.id;
+        if (!uid) {
+          return res.status(401).json({
+            success: false,
+            error: "Usu\xE1rio n\xE3o autenticado."
+          });
+        }
+        const extraction = await extractCandidateProfileFromPdf(file.buffer, file.originalname);
+        const db = getServerFirestore();
+        const userDocRef = doc4(db, "users", uid);
+        let existingProfile = {};
+        try {
+          const snapBefore = await getDoc(userDocRef);
+          if (snapBefore.exists()) {
+            existingProfile = snapBefore.data()?.profile || {};
+          }
+        } catch (readErr) {
+          console.warn("[RESUME_UPLOAD] Erro ao ler documento pr\xE9vio do usu\xE1rio:", readErr);
+        }
+        const mergedProfile = {
+          ...existingProfile,
+          ...extraction.extracted,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        await setDoc4(userDocRef, { profile: mergedProfile }, { merge: true });
+        const savedSnap = await getDoc(userDocRef);
+        const savedData = savedSnap.exists() ? savedSnap.data() : null;
+        const verifiedProfile = savedData?.profile || mergedProfile;
+        const maskedUid = uid.length > 8 ? `${uid.substring(0, 4)}...${uid.substring(uid.length - 4)}` : uid;
+        console.log("==========================================");
+        console.log("\u{1F4CA} DIAGN\xD3STICO DE PROCESSAMENTO DE CURR\xCDCULO");
+        console.log("==========================================");
+        console.log(`PDF recebido: SIM`);
+        console.log(`Tamanho: ${(file.size / 1024).toFixed(1)} KB`);
+        console.log(`MIME type: ${file.mimetype}`);
+        console.log(`Texto extra\xEDdo: ${extraction.rawTextLength} caracteres`);
+        console.log(`Primeiros 300 caracteres: "${extraction.sampleText.substring(0, 150)}..."`);
+        console.log(`Quantidade de campos preenchidos: ${extraction.filledFieldsCount}`);
+        console.log(`Campos preenchidos: ${extraction.filledFieldsList.join(", ")}`);
+        console.log(`UID: ${maskedUid}`);
+        console.log(`Firestore Project: ${REAL_FIREBASE_CONFIG.projectId}`);
+        console.log(`Firestore Database: ${REAL_FIREBASE_CONFIG.firestoreDatabaseId}`);
+        console.log(`Documento Firestore: users/${maskedUid}`);
+        console.log(`Verifica\xE7\xE3o de Leitura Firestore: ${savedSnap.exists() ? "SUCESSO" : "FALHA"}`);
+        console.log("==========================================");
+        return res.json({
+          success: true,
+          message: "Dados extra\xEDdos com sucesso \u2022 PDF exclu\xEDdo ap\xF3s o processamento",
+          extracted: verifiedProfile,
+          warning: extraction.warning,
+          diagnostics: {
+            pdfReceived: true,
+            sizeKb: Math.round(file.size / 1024),
+            rawTextLength: extraction.rawTextLength,
+            filledFieldsCount: extraction.filledFieldsCount,
+            filledFieldsList: extraction.filledFieldsList,
+            maskedUid,
+            projectId: REAL_FIREBASE_CONFIG.projectId,
+            firestorePath: `users/${maskedUid}`,
+            verifiedInFirestore: savedSnap.exists()
+          }
+        });
+      } catch (err) {
+        console.error("Erro no processamento do curr\xEDculo:", err);
+        return res.status(500).json({
+          success: false,
+          error: "Erro interno ao processar o curr\xEDculo PDF.",
+          details: err?.message
+        });
+      }
+    }
+  );
+  app.get("/api/candidate/profile", requireAuthenticatedUser(), async (req, res) => {
+    try {
+      const uid = req.firebaseUser?.id;
+      if (!uid) return res.status(401).json({ success: false, error: "N\xE3o autenticado" });
+      const db = getServerFirestore();
+      const userDocRef = doc4(db, "users", uid);
+      const snap = await getDoc(userDocRef);
+      if (snap.exists() && snap.data()?.profile) {
+        return res.json({ success: true, profile: snap.data().profile });
+      }
+      return res.json({ success: true, profile: null });
+    } catch (err) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+  app.post("/api/candidate/profile", requireAuthenticatedUser(), async (req, res) => {
+    try {
+      const uid = req.firebaseUser?.id;
+      if (!uid) return res.status(401).json({ success: false, error: "N\xE3o autenticado" });
+      const { profile } = req.body;
+      if (!profile || typeof profile !== "object") {
+        return res.status(400).json({ success: false, error: "Dados do perfil ausentes." });
+      }
+      const db = getServerFirestore();
+      const userDocRef = doc4(db, "users", uid);
+      const profileWithTimestamp = {
+        ...profile,
+        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      await setDoc4(userDocRef, { profile: profileWithTimestamp }, { merge: true });
+      return res.json({
+        success: true,
+        message: "Perfil atualizado com sucesso!",
+        profile: profileWithTimestamp
+      });
+    } catch (err) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
   });
   app.get("/api/sine/jobs", async (req, res) => {
     try {

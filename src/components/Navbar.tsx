@@ -25,6 +25,7 @@ interface NavbarProps {
   isAdmin: boolean;
   onLogout: () => void;
   onOpenAdminDashboard: () => void;
+  onOpenCandidateDashboard: () => void;
   onOpenPostJob: () => void;
   onOpenShareModal: () => void;
   onOpenGratitudeModal: () => void;
@@ -42,6 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   isAdmin,
   onLogout,
   onOpenAdminDashboard,
+  onOpenCandidateDashboard,
   onOpenPostJob,
   onOpenShareModal,
   onOpenGratitudeModal,
@@ -165,23 +167,32 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="hidden sm:flex items-center gap-3">
             {currentUser ? (
               <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-xl border-2 border-slate-900">
-                <div className="w-7 h-7 rounded-lg bg-purple-700 text-white font-black text-xs flex items-center justify-center">
-                  {(currentUser.displayName || currentUser.email || 'U')[0].toUpperCase()}
-                </div>
-                <div className="text-left">
-                  <span className="block text-xs font-black text-slate-900 truncate max-w-[120px]">
-                    {currentUser.displayName || currentUser.email?.split('@')[0]}
-                  </span>
-                  {isAdmin && (
-                    <button
-                      onClick={onOpenAdminDashboard}
-                      className="inline-block text-[9px] px-2 py-0.5 bg-yellow-400 hover:bg-yellow-300 text-slate-900 rounded font-black uppercase tracking-wider border border-slate-900 transition-all btn-pop"
-                      title="Abrir Painel Administrativo de Acessos"
-                    >
-                      🔑 Painel Admin
-                    </button>
-                  )}
-                </div>
+                <button
+                  onClick={onOpenCandidateDashboard}
+                  className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+                  title="Abrir Meu Perfil / Currículo"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-purple-700 text-white font-black text-xs flex items-center justify-center">
+                    {(currentUser.displayName || currentUser.email || 'U')[0].toUpperCase()}
+                  </div>
+                  <div className="text-left">
+                    <span className="block text-xs font-black text-slate-900 truncate max-w-[120px]">
+                      {currentUser.displayName || currentUser.email?.split('@')[0]}
+                    </span>
+                    <span className="text-[10px] text-purple-700 font-extrabold flex items-center gap-0.5">
+                      👤 Meu Perfil
+                    </span>
+                  </div>
+                </button>
+                {isAdmin && (
+                  <button
+                    onClick={onOpenAdminDashboard}
+                    className="inline-block text-[9px] px-2 py-0.5 bg-yellow-400 hover:bg-yellow-300 text-slate-900 rounded font-black uppercase tracking-wider border border-slate-900 transition-all btn-pop"
+                    title="Abrir Painel Administrativo de Acessos"
+                  >
+                    🔑 Admin
+                  </button>
+                )}
                 <button
                   onClick={onLogout}
                   title="Sair"
