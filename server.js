@@ -991,23 +991,26 @@ async function extractCandidateProfileFromPdf(pdfBuffer, filename) {
   let warning;
   const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.VITE_FIREBASE_API_KEY;
   if (apiKey) {
-    try {
-      const ai = new GoogleGenAI({ apiKey });
-      const pdfBase64 = pdfBuffer.toString("base64");
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                inlineData: {
-                  mimeType: "application/pdf",
-                  data: pdfBase64
-                }
-              },
-              {
-                text: `Analise com aten\xE7\xE3o o arquivo PDF de curr\xEDculo em anexo e extraia todas as informa\xE7\xF5es profissionais do candidato em formato JSON estrito.
+    const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
+    const pdfBase64 = pdfBuffer.toString("base64");
+    let jsonText = "";
+    for (const modelName of modelsToTry) {
+      try {
+        const ai = new GoogleGenAI({ apiKey });
+        const response = await ai.models.generateContent({
+          model: modelName,
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  inlineData: {
+                    mimeType: "application/pdf",
+                    data: pdfBase64
+                  }
+                },
+                {
+                  text: `Analise com aten\xE7\xE3o o arquivo PDF de curr\xEDculo em anexo e extraia todas as informa\xE7\xF5es profissionais do candidato em formato JSON estrito.
 
 A resposta DEVE ser exclusivamente um JSON v\xE1lido com as seguintes chaves:
 {
@@ -1030,17 +1033,26 @@ Regras:
 1. Se algum campo n\xE3o estiver presente no documento, deixe como string vazia "".
 2. Se o PDF for uma imagem ou escaneado, leia todo o texto visual do curr\xEDculo.
 3. N\xE3o invente informa\xE7\xF5es fict\xEDcias, use apenas o conte\xFAdo do documento.`
-              }
-            ]
+                }
+              ]
+            }
+          ],
+          config: {
+            responseMimeType: "application/json",
+            temperature: 0.1
           }
-        ],
-        config: {
-          responseMimeType: "application/json",
-          temperature: 0.1
+        });
+        jsonText = response.text?.trim() || "";
+        if (jsonText) {
+          console.log(`[GEMINI_EXTRACTOR] Extra\xE7\xE3o bem-sucedida usando o modelo ${modelName}`);
+          break;
         }
-      });
-      const jsonText = response.text?.trim() || "";
-      if (jsonText) {
+      } catch (err) {
+        console.warn(`[GEMINI_EXTRACTOR] Falha com o modelo ${modelName}:`, err?.message || err);
+      }
+    }
+    if (jsonText) {
+      try {
         const parsed = JSON.parse(jsonText);
         extracted = {
           name: parsed.name || "",
@@ -1057,9 +1069,11 @@ Regras:
           skills: Array.isArray(parsed.skills) ? parsed.skills.join(", ") : parsed.skills || "",
           summary: parsed.summary || ""
         };
+      } catch (pErr) {
+        console.warn("[GEMINI_EXTRACTOR] Falha no parse do JSON do Gemini:", pErr);
+        extracted = heuristicExtract(rawText);
       }
-    } catch (llmErr) {
-      console.warn("[GEMINI_EXTRACTOR] Erro na extra\xE7\xE3o multimodal do Gemini. Usando fallback regex:", llmErr?.message || llmErr);
+    } else {
       extracted = heuristicExtract(rawText);
     }
   } else {
