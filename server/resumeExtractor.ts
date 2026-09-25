@@ -68,26 +68,45 @@ function heuristicExtract(text: string): ExtractedCandidateProfile {
     .map(l => l.trim())
     .filter(l => l.length > 0 && !/^-- \d+ of \d+ --$/.test(l));
 
-  // 1. Nome (primeira linha válida que não seja rótulo de documento)
-  for (const line of cleanLines.slice(0, 8)) {
-    if (
-      line.length >= 3 &&
-      line.length < 60 &&
-      !/curr[ií]culo|resumo|email|telefone|contato|perfil|página/i.test(line) &&
-      !/^nome:/i.test(line)
-    ) {
-      profile.name = line.replace(/^nome[:\s]*/i, '').trim();
-      break;
-    } else if (/^nome:/i.test(line)) {
-      profile.name = line.replace(/^nome[:\s]*/i, '').trim();
-      break;
+  // 1. NOME: só aceita evidência explícita do currículo.
+  // Nunca usa a primeira sequência de texto como nome: PDFs podem começar
+  // com cabeçalho, título, paginação ou texto técnico.
+  const labeledName = text.match(/(?:^|\n)\s*(?:nome\s*(?:completo)?|candidato)\s*[:\-]\s*([^\n]{3,80})/i);
+  if (labeledName) {
+    const candidate = labeledName[1].trim();
+    if (/^[A-Za-zÀ-ÿ]+(?:\s+[A-Za-zÀ-ÿ.'-]+){1,7}$/.test(candidate)) {
+      profile.name = candidate;
     }
   }
 
-  // 2. WhatsApp / Telefone (valida DDD e padrão nacional)
-  const phoneMatch = text.match(/(?:\+?55\s*)?(?:\(?([1-9]{2})\)?\s*)?(?:9[6-9]\d{3}[-\s]?\d{4}|[2-5]\d{3}[-\s]?\d{4})/);
-  if (phoneMatch) {
-    profile.phone = phoneMatch[0].trim();
+  // Se não houver "Nome:", procura apenas no pequeno cabeçalho inicial,
+  // descartando e-mail, telefone, URLs, títulos e rótulos.
+  if (!profile.name) {
+    for (const line of cleanLines.slice(0, 6)) {
+      const candidate = line
+        .replace(/^[|•·\-–—]+/, '')
+        .trim();
+      if (
+        candidate.length >= 5 &&
+        candidate.length <= 70 &&
+        /^[A-Za-zÀ-ÿ]+(?:\s+[A-Za-zÀ-ÿ.'-]+){1,7}$/.test(candidate) &&
+        !/^(curr[ií]culo|resume|cv|perfil|resumo|contato|experiência|formação|objetivo)$/i.test(candidate)
+      ) {
+        profile.name = candidate;
+        break;
+      }
+    }
+  }
+
+  // 2. TELEFONE: só aceita número explicitamente associado a telefone/WhatsApp
+  // ou um padrão brasileiro muito claro. Evita capturar números de datas,
+  // CEP, salário, documentos ou outras informações do currículo.
+  const labeledPhone = text.match(/(?:telefone|celular|whatsapp|fone|contato)\s*[:\-]?\s*((?:\+?55\s*)?\(?\d{2}\)?\s*9?\d{4,5}[-\s]?\d{4})/i);
+  const genericPhone = text.match(/(?:^|\n)\s*(\+?55\s*\(?[1-9]\d\)?\s*9\d{4}[-\s]?\d{4})\s*(?:$|\n)/m);
+  if (labeledPhone) {
+    profile.phone = labeledPhone[1].trim();
+  } else if (genericPhone) {
+    profile.phone = genericPhone[1].trim();
   }
 
   // 3. Cidade (foco em Teresina e Piauí / Maranhão)
@@ -187,7 +206,9 @@ export async function extractCandidateProfileFromPdf(
           const ai = new GoogleGenAI({ apiKey });
           const response = await ai.models.generateContent({
             model: modelName,
-            contents: `Analise este texto de currículo e extraia em JSON estrito com as chaves:
+            contents: `Analise este texto de currículo e extraia somente informações que estejam explicitamente presentes no texto. NÃO invente, NÃO complete por contexto e NÃO use o nome do arquivo. Se um campo não estiver claramente identificado, retorne string vazia. Para NOME e TELEFONE, seja especialmente rigoroso: o nome deve ser o nome do candidato no cabeçalho ou em um campo "Nome"; telefone deve ser um número associado a telefone/celular/WhatsApp/fone/contato. Nunca confunda CPF, RG, CEP, datas, salário, número de processo, códigos ou outros números com telefone.
+
+Extraia em JSON estrito com as chaves:
 {
   "name": "Nome completo",
   "phone": "Telefone/WhatsApp",
@@ -293,17 +314,9 @@ ${rawText}`,
     extracted = heuristicExtract(rawText);
   }
 
-  // Preenche o nome caso continue vazio a partir do nome do arquivo
-  if (!extracted.name && filename) {
-    const cleanFileName = filename
-      .replace(/\.pdf$/i, '')
-      .replace(/curr[ií]culo|cv|resume| - /gi, ' ')
-      .replace(/[_-]+/g, ' ')
-      .trim();
-    if (cleanFileName.length >= 3 && cleanFileName.length < 40) {
-      extracted.name = cleanFileName;
-    }
-  }
+  // NÃO usa o nome do arquivo como nome do candidato.
+  // O arquivo pode ter o nome de outra pessoa, empresa, modelo ou título.
+  // O nome só pode vir do conteúdo do currículo.
 
   const filledFieldsList = Object.entries(extracted)
     .filter(([_, value]) => Boolean(value && typeof value === 'string' && value.trim().length > 0))
