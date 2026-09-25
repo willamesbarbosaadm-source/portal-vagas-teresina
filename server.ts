@@ -7,7 +7,7 @@ import { createServer as createViteServer } from "vite";
 import { syncSineJobs } from "./server/sineProvider.ts";
 import { syncThemosJobs } from "./server/themosProvider.ts";
 import { syncGupyJobs, fetchGupyTeresinaJobs } from "./server/gupyProvider.ts";
-import { requireFirebaseAdmin, requireAuthenticatedUser } from "./server/firebaseAuthHelper.ts";
+import { requireFirebaseAdmin, requireAuthenticatedUser, validateFirebaseToken } from "./server/firebaseAuthHelper.ts";
 import { getServerFirestore, REAL_FIREBASE_CONFIG } from "./server/firebaseDb.ts";
 import { extractCandidateProfileFromPdf } from "./server/resumeExtractor.ts";
 
