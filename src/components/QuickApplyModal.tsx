@@ -37,8 +37,14 @@ export const QuickApplyModal: React.FC<QuickApplyModalProps> = ({
             method: 'POST',
             body: formData
           });
-          const data = await res.json();
-          if (data.success && data.extracted) {
+          const resText = await res.text().catch(() => '');
+          let data: any = null;
+          try {
+            data = resText ? JSON.parse(resText) : null;
+          } catch (e) {
+            data = null;
+          }
+          if (data && data.success && data.extracted) {
             if (data.extracted.name && !candidateName) setCandidateName(data.extracted.name);
             if (data.extracted.phone && !candidatePhone) setCandidatePhone(data.extracted.phone);
             if (data.extracted.linkedin && !candidatePortfolio) setCandidatePortfolio(data.extracted.linkedin);

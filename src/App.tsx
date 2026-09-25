@@ -294,7 +294,7 @@ export default function App() {
 
     // Também consulta a API para carregar se necessário
     fetch('/api/sine/jobs')
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => (res.ok ? res.text().then(t => t ? JSON.parse(t) : null).catch(() => null) : null))
       .then((data) => {
         if (data && data.success && Array.isArray(data.jobs) && data.jobs.length > 0) {
           const validSine = data.jobs.filter(isSineJobRecord).map(normalizeSineJobRecord);
@@ -389,7 +389,7 @@ export default function App() {
 
     // 2. Fetch from backend API (vagas reais diretas da fonte)
     fetch('/api/gupy/jobs')
-      .then(res => res.ok ? res.json() : null)
+      .then(res => res.ok ? res.text().then(t => t ? JSON.parse(t) : null).catch(() => null) : null)
       .then(data => {
         if (data && data.success && Array.isArray(data.jobs) && data.jobs.length > 0) {
           hasLoadedGupy = true;
@@ -522,9 +522,9 @@ export default function App() {
   // Puxa automaticamente a próxima vaga real do LinkedIn e Gupy de Teresina
   const pullNextLinkedInJob = useCallback(() => {
     fetch('/api/gupy/jobs')
-      .then(res => res.json())
+      .then(res => res.ok ? res.text().then(t => t ? JSON.parse(t) : null).catch(() => null) : null)
       .then(data => {
-        if (data.success && Array.isArray(data.jobs) && data.jobs.length > 0) {
+        if (data && data.success && Array.isArray(data.jobs) && data.jobs.length > 0) {
           setJobs(prevJobs => {
             const existingIds = new Set(prevJobs.map(j => j.id));
             const newGupyJobs = data.jobs.filter((j: Job) => !existingIds.has(j.id));

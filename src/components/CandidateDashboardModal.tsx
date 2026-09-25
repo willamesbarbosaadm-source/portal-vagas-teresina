@@ -184,10 +184,16 @@ export function CandidateDashboardModal({
         body: formData
       });
 
-      const data = await response.json();
+      const responseText = await response.text().catch(() => '');
+      let data: any = null;
+      try {
+        data = responseText ? JSON.parse(responseText) : null;
+      } catch (parseErr) {
+        data = null;
+      }
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Falha ao processar currículo.');
+      if (!response.ok || !data || !data.success) {
+        throw new Error(data?.error || `Falha ao processar o arquivo PDF (Servidor retornou status ${response.status}).`);
       }
 
       // Atualiza o perfil imediatamente no estado

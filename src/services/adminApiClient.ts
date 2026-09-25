@@ -41,7 +41,13 @@ export async function adminFetch<T = any>(
       headers
     });
 
-    const data = await response.json().catch(() => null);
+    const resText = await response.text().catch(() => '');
+    let data: any = null;
+    try {
+      data = resText ? JSON.parse(resText) : null;
+    } catch {
+      data = null;
+    }
 
     if (response.status === 401) {
       return {

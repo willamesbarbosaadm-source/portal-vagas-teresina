@@ -30,7 +30,23 @@ async function startServer() {
   // Candidate Resume Parsing & Profile Persistence Endpoint
   app.post(
     "/api/candidate/resume",
-    upload.single("resume"),
+    (req: express.Request, res: express.Response, next: express.NextFunction) => {
+      upload.single("resume")(req, res, (err) => {
+        if (err) {
+          if (err instanceof multer.MulterError) {
+            return res.status(400).json({
+              success: false,
+              error: `Erro no upload do arquivo: ${err.message}`
+            });
+          }
+          return res.status(400).json({
+            success: false,
+            error: err.message || "Erro no upload do arquivo PDF."
+          });
+        }
+        next();
+      });
+    },
     async (req: express.Request, res: express.Response) => {
       try {
         const file = req.file || (req as any).files?.[0];
@@ -374,6 +390,19 @@ async function startServer() {
     } catch (error: any) {
       res.status(500).json({ success: false, error: error.message });
     }
+  });
+
+  // Middleware global de tratamento de erros da API para evitar respostas HTML ou vazias
+  app.use("/api", (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error("[API_ERROR]", err);
+    if (res.headersSent) {
+      return next(err);
+    }
+    const status = err.status || err.statusCode || 500;
+    return res.status(status).json({
+      success: false,
+      error: err.message || "Erro no servidor ao processar a requisição."
+    });
   });
 
   // Vite middleware for development or static serving in production

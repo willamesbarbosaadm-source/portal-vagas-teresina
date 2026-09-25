@@ -1102,7 +1102,23 @@ async function startServer() {
   });
   app.post(
     "/api/candidate/resume",
-    upload.single("resume"),
+    (req, res, next) => {
+      upload.single("resume")(req, res, (err) => {
+        if (err) {
+          if (err instanceof multer.MulterError) {
+            return res.status(400).json({
+              success: false,
+              error: `Erro no upload do arquivo: ${err.message}`
+            });
+          }
+          return res.status(400).json({
+            success: false,
+            error: err.message || "Erro no upload do arquivo PDF."
+          });
+        }
+        next();
+      });
+    },
     async (req, res) => {
       try {
         const file = req.file || req.files?.[0];
@@ -1396,6 +1412,17 @@ async function startServer() {
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
     }
+  });
+  app.use("/api", (err, req, res, next) => {
+    console.error("[API_ERROR]", err);
+    if (res.headersSent) {
+      return next(err);
+    }
+    const status = err.status || err.statusCode || 500;
+    return res.status(status).json({
+      success: false,
+      error: err.message || "Erro no servidor ao processar a requisi\xE7\xE3o."
+    });
   });
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
